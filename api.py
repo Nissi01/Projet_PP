@@ -25,6 +25,22 @@ class Anime(db.Model):
 def home():
     return jsonify({"message": "Bienvenue sur l'API MyAnimeList !"}), 200
 
+@app.route('/animes/<int:id>', methods=['GET'])
+def get_anime(id):
+    anime = next((s for s in Anime if s['id']==id), None)
+    if anime:
+        return jsonify(anime), 201
+    return jsonify({"erreur:cette anime n'existe pas"}), 404
+
+@app.route('/animes/<int:id>', methods=['PUT'])
+def update_anime(id):
+    anime = next((s for s in Anime if s['id']==id), None)
+    if not anime:
+        return jsonify({"erreur:cette etudiant non trouvé"}), 404
+    data=request.get_json()
+    anime.update(data)
+    return jsonify(anime)
+
 @app.route('/animes', methods=['GET'])
 def get_animes():
     result = []
