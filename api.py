@@ -18,13 +18,22 @@ class Anime(db.Model):
     synopsis = db.Column(db.Text)
     status = db.Column(db.String(20), default='en cours')
 
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    pseudo = db.Column(db.String(50), nullable=False, unique=True)
 
+class Genre(db.Model):
+    __tablename__ = 'genres'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
 
 
 @app.route('/')
 def home():
     return jsonify({"message": "Bienvenue sur l'API MyAnimeList !"}), 200
 
+# API anime
 @app.route('/animes/<int:id>', methods=['GET'])
 def get_anime(id):
     anime = next((s for s in Anime if s['id']==id), None)
@@ -41,6 +50,7 @@ def update_anime(id):
     anime.update(data)
     return jsonify(anime)
 
+# Avoir la liste entiere des animes
 @app.route('/animes', methods=['GET'])
 def get_animes():
     result = []
@@ -54,10 +64,10 @@ def get_animes():
         })
     return jsonify(result), 200
 
+# Ajouter un anime
 @app.route('/animes', methods=['POST'])
 def add_anime():
     data = request.get_json()
-    
  
     if not data or not 'name' in data:
         return jsonify({"error": "Le champ 'name' est obligatoire"}), 400
@@ -73,6 +83,78 @@ def add_anime():
     
     return jsonify({"message": "Anime ajouté avec succès !"}), 201
 
+# Supprimer un anime
+@app.route('/animes/<int:anime_id>', methods=['DELETE'])
+def delete_anime(anime_id):
+    del_anime = Anime.query.get(anime_id)
+    
+    if not del_anime:
+        return jsonify({"error": "Anime non trouvé"}), 404
+        
+    db.session.delete(del_anime)
+    db.session.commit()
+    
+    return jsonify({"message": f"L'anime {del_anime.name} a été supprimé avec succès !"}), 200
+
+# API User 
+@app.route('/users/<int:id>', methods=['GET'])
+def get_user(id):
+    user = next((s for s in User if s['id']==id), None)
+    if user:
+        return jsonify(user), 201
+    return jsonify({"erreur : cette utilisateur n'existe pas"}), 404
+
+@app.route('/users/<int:id>', methods=['PUT'])
+def update_user(id):
+    user = next((s for s in User if s['id']==id), None)
+    if not user:
+        return jsonify({"erreur : cette utilisateur n'existe pas"}), 404
+    data=request.get_json()
+    user.update(data)
+    return jsonify(user)
+
+# Avoir la liste entiere des utilisateurs
+@app.route('/users', methods=['GET'])
+def get_users():
+    result = []
+    users = User.query.all()
+    for a in users:
+        result.append({
+            "id": a.id,
+            "pseudo": a.pseudo,
+        })
+    return jsonify(result), 200
+
+# Ajouter un user
+@app.route('/users', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    
+    if not data or not 'pseudo' in data:
+        return jsonify({"error": "Le pseudo est obligatoire"}), 400
+        
+    nouveau_user = User(pseudo=data['pseudo'])
+    
+    try:
+        db.session.add(nouveau_user)
+        db.session.commit()
+        return jsonify({"message": f"Utilisateur {nouveau_user.pseudo} créé !"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Ce pseudo existe peut-être déjà."}), 400
+    
+# Supprimer un user
+@app.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_anime(user_id):
+    del_user = User.query.get(user_id)
+    
+    if not del_user:
+        return jsonify({"error": "Anime non trouvé"}), 404
+        
+    db.session.delete(del_user)
+    db.session.commit()
+    
+    return jsonify({"message": f"L'utilisateur {del_user.pseudo} a été supprimé avec succès !"}), 200
 
 # --- LANCEMENT DU SERVEUR ---
 if __name__ == '__main__':
