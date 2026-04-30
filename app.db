@@ -17,7 +17,7 @@ CREATE TABLE animes (
 
 CREATE TABLE anime_genres (
     anime_id INT,
-    genre_name INT,
+    genre_id INT,
     PRIMARY KEY (anime_id, genre_name),
     FOREIGN KEY (anime_id) REFERENCES animes(id) ON DELETE CASCADE,
     FOREIGN KEY (genre_name) REFERENCES genres(name) ON DELETE CASCADE
