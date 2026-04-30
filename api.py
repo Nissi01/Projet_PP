@@ -36,19 +36,46 @@ def home():
 # API anime
 @app.route('/animes/<int:id>', methods=['GET'])
 def get_anime(id):
-    anime = next((s for s in Anime if s['id']==id), None)
+   
+    anime = Anime.query.get(id) 
+
     if anime:
-        return jsonify(anime), 201
-    return jsonify({"erreur:cette anime n'existe pas"}), 404
+        return jsonify({
+            "id": anime.id,
+            "name": anime.name,
+            "synopsis": anime.synopsis,
+            "status": anime.status
+        }), 200
+    
+    return jsonify({"erreur":"cette anime n'existe pas"}), 404
 
 @app.route('/animes/<int:id>', methods=['PUT'])
 def update_anime(id):
-    anime = next((s for s in Anime if s['id']==id), None)
+    # 1. On cherche l'anime dans la base
+    anime = Anime.query.get(id) 
+
+    # 2. Si l'anime n'existe pas, on s'arrête là
     if not anime:
-        return jsonify({"erreur:cette etudiant non trouvé"}), 404
-    data=request.get_json()
-    anime.update(data)
-    return jsonify(anime)
+        return jsonify({"erreur": "anime non trouvé"}), 404
+
+    # 3. On récupère les données envoyées par l'utilisateur
+    data = request.get_json()
+
+    # 4. On met à jour les champs (en gardant l'ancienne valeur si le champ est absent)
+    anime.name = data.get('name', anime.name)
+    anime.synopsis = data.get('synopsis', anime.synopsis)
+    anime.status = data.get('status', anime.status)
+
+    # 5. On enregistre les modifications dans la base de données
+    db.session.commit()
+
+    # 6. On retourne l'objet mis à jour
+    return jsonify({
+        "id": anime.id,
+        "name": anime.name,
+        "synopsis": anime.synopsis,
+        "status": anime.status
+    }), 200
 
 # Avoir la liste entiere des animes
 @app.route('/animes', methods=['GET'])
