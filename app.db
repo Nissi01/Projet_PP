@@ -17,7 +17,7 @@ CREATE TABLE animes (
 
 CREATE TABLE anime_genres (
     anime_id INT,
-    genre_id INT,
+    genre_name VARCHAR(50),
     PRIMARY KEY (anime_id, genre_name),
     FOREIGN KEY (anime_id) REFERENCES animes(id) ON DELETE CASCADE,
     FOREIGN KEY (genre_name) REFERENCES genres(name) ON DELETE CASCADE
@@ -55,3 +55,8 @@ INSERT INTO animes (name, synopsis, status) VALUES
 ('Wandering Witch: The Journey of Elaina', 'L''histoire du voyage d''une sorciere au nom d''Elaina', 'termine'),
 ('One Piece', 'Une histoire de pirates qui s''etire en longueur...', 'en cours'),
 ('Gintama', 'C''est quoi ?', 'annule');
+
+-- Liaison des genres aux animes
+INSERT INTO anime_genres (anime_id, genre_name) VALUES 
+(1, 'Seinen'), -- Eighty-Six est un Seinen
+(3, 'Shonen'); -- One Piece est un Shonen

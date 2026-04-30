@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+import time
 
 app = Flask(__name__)
 
@@ -25,7 +26,7 @@ class User(db.Model):
 
 class Genre(db.Model):
     __tablename__ = 'genres'
-    name = db.Column(db.String(50), nullable=False, unique=True)
+    name = db.Column(db.String(50), primary_key=True)
 
 
 @app.route('/')
@@ -182,7 +183,42 @@ def delete_user(user_id):
     
     return jsonify({"message": f"L'utilisateur {del_user.pseudo} a été supprimé avec succès !"}), 200
 
+@app.route('/genres', methods=['GET'])
+def get_genres():
+    genres = Genre.query.all()
+    result = []
+    for g in genres:
+        result.append({"name": g.name})
+    return jsonify(result), 200
+
+@app.route('/genres', methods=['POST'])
+def add_genre():
+    data = request.get_json()
+
+    if not data or 'name' not in data:
+        return jsonify({"error": "Le champ 'name' est obligatoire"}), 400
+
+    nouveau_genre = Genre(name=data['name'])
+
+    try:
+        db.session.add(nouveau_genre)
+        db.session.commit()
+        return jsonify({"message": f"Genre '{nouveau_genre.name}' ajouté !"}), 201
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Ce genre existe déjà."}), 400
+
 # --- LANCEMENT DU SERVEUR ---
 if __name__ == '__main__':
-    # Force Flask à écouter sur toutes les interfaces pour Docker
+    # Petite boucle pour attendre que MySQL soit prêt dans Docker
+    connected = False
+    while not connected:
+        try:
+            with app.app_context():
+                db.create_all()
+            connected = True
+        except Exception as e:
+            print("En attente de MySQL...")
+            time.sleep(2)
+            
     app.run(host="0.0.0.0", port=5001, debug=True)
