@@ -38,7 +38,7 @@ def get_anime(id):
             "status": anime.status
         }), 200
     
-    return jsonify({"erreur:cette anime n'existe pas"}), 404
+    return jsonify({"erreur":"cette anime n'existe pas"}), 404
 
 @app.route('/animes/<int:id>', methods=['PUT'])
 def update_anime(id):
