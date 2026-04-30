@@ -175,7 +175,7 @@ def delete_user(user_id):
     del_user = User.query.get(user_id)
     
     if not del_user:
-        return jsonify({"error": "Anime non trouvé"}), 404
+        return jsonify({"error": "Utilisateur non trouvé"}), 404
         
     db.session.delete(del_user)
     db.session.commit()
