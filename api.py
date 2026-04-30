@@ -172,11 +172,11 @@ def add_user():
     
 # Supprimer un user
 @app.route('/users/<int:user_id>', methods=['DELETE'])
-def delete_anime_from_user(user_id):
+def delete_user(user_id):
     del_user = User.query.get(user_id)
     
     if not del_user:
-        return jsonify({"error": "Anime non trouvé"}), 404
+        return jsonify({"error": "Utilisateur non trouvé"}), 404
         
     db.session.delete(del_user)
     db.session.commit()
