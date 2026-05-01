@@ -19,11 +19,12 @@ anime_genres = db.Table('anime_genres',
 
 class Anime(db.Model):
     __tablename__ = 'animes'
-    id       = db.Column(db.Integer, primary_key=True)
-    name     = db.Column(db.String(100), nullable=False)
-    synopsis = db.Column(db.Text)
-    status   = db.Column(db.String(20), default='en cours')
-    genres   = db.relationship('Genre', secondary=anime_genres, backref='animes', lazy='subquery')
+    id        = db.Column(db.Integer, primary_key=True)
+    name      = db.Column(db.String(100), nullable=False)
+    synopsis  = db.Column(db.Text)
+    status    = db.Column(db.String(20), default='en cours')
+    cover_url = db.Column(db.String(500), nullable=True)
+    genres    = db.relationship('Genre', secondary=anime_genres, backref='animes', lazy='subquery')
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -48,6 +49,7 @@ def anime_to_dict(a):
     return {
         "id": a.id, "name": a.name,
         "synopsis": a.synopsis, "status": a.status,
+        "cover_url": a.cover_url,
         "genres": [g.name for g in a.genres],
     }
 
@@ -85,7 +87,7 @@ def add_anime():
     data = request.get_json()
     if not data or 'name' not in data:
         return jsonify({"error": "Le champ 'name' est obligatoire"}), 400
-    a = Anime(name=data['name'], synopsis=data.get('synopsis', ''), status=data.get('status', 'en cours'))
+    a = Anime(name=data['name'], synopsis=data.get('synopsis', ''), status=data.get('status', 'en cours'), cover_url=data.get('cover_url', None))
     for gn in data.get('genres', []):
         g = Genre.query.get(gn)
         if g: a.genres.append(g)
@@ -98,9 +100,10 @@ def update_anime(id):
     a = Anime.query.get(id)
     if not a: return jsonify({"erreur": "anime non trouvé"}), 404
     data = request.get_json()
-    a.name = data.get('name', a.name)
-    a.synopsis = data.get('synopsis', a.synopsis)
-    a.status = data.get('status', a.status)
+    a.name      = data.get('name', a.name)
+    a.synopsis  = data.get('synopsis', a.synopsis)
+    a.status    = data.get('status', a.status)
+    a.cover_url = data.get('cover_url', a.cover_url)
     if 'genres' in data:
         a.genres = []
         for gn in data['genres']:

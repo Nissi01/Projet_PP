@@ -50,12 +50,12 @@
   <script>
     var MOCK_MODE = false;
     var _mockAnimes = [
-      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'terminé', genres: ['Action', 'Seinen'] },
-      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'terminé', genres: ['Action', 'Shōnen'] },
-      { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours', genres: ['Action', 'Shōnen'] },
-      { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours', genres: ['Action', 'Shōnen'] },
-      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'terminé', genres: ['Seinen'] },
-      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir', genres: ['Slice of Life', 'Seinen'] },
+      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale.', status: 'terminé', genres: ['Action', 'Seinen'], cover_url: 'https://cdn.myanimelist.net/images/anime/1208/94745.jpg' },
+      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants.", status: 'terminé', genres: ['Action', 'Shōnen'], cover_url: 'https://cdn.myanimelist.net/images/anime/10/47347.jpg' },
+      { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons.', status: 'en cours', genres: ['Action', 'Shōnen'], cover_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' },
+      { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit.", status: 'en cours', genres: ['Action', 'Shōnen'], cover_url: 'https://cdn.myanimelist.net/images/anime/1171/109222.jpg' },
+      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger son père.', status: 'terminé', genres: ['Seinen'], cover_url: 'https://cdn.myanimelist.net/images/anime/1579/111998.jpg' },
+      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage.', status: 'à venir', genres: ['Slice of Life', 'Seinen'], cover_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' },
     ];
     var _mockUsers = [
       { id: 1, pseudo: 'otaku42' },
@@ -78,7 +78,7 @@
     function mockDelay(data) { return new Promise(function(r){ setTimeout(function(){ r(JSON.parse(JSON.stringify(data))); }, 250); }); }
     function mockGetAnimes() { return mockDelay(_mockAnimes); }
     function mockGetAnime(id) { var a = _mockAnimes.find(function(x){ return x.id === id; }); return a ? mockDelay(a) : Promise.reject(new Error('Anime non trouvé')); }
-    function mockAddAnime(data) { var a = Object.assign({ id: ++_mockId, genres: [] }, data); _mockAnimes.push(a); return mockDelay(a); }
+    function mockAddAnime(data) { var a = Object.assign({ id: ++_mockId, genres: [], cover_url: '' }, data); _mockAnimes.push(a); return mockDelay(a); }
     function mockUpdateAnime(id, data) { var i = _mockAnimes.findIndex(function(x){ return x.id === id; }); if (i < 0) return Promise.reject(new Error('Non trouvé')); _mockAnimes[i] = Object.assign({}, _mockAnimes[i], data); return mockDelay(_mockAnimes[i]); }
     function mockDeleteAnime(id) { _mockAnimes = _mockAnimes.filter(function(x){ return x.id !== id; }); return mockDelay({ message: 'ok' }); }
     function mockGetUsers() { return mockDelay(_mockUsers); }
@@ -771,9 +771,21 @@ function AnimeCard({ anime, onSelect, onDelete }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Cover placeholder */}
+      {/* Cover */}
       <div style={animeCardStyles.cover} onClick={() => onSelect(anime)}>
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        {anime.cover_url ? (
+          <img
+            src={anime.cover_url}
+            alt={anime.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+          />
+        ) : null}
+        <svg
+          width="100%" height="100%"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ display: anime.cover_url ? 'none' : 'block', position: anime.cover_url ? 'absolute' : 'static', inset: 0 }}
+        >
           <defs>
             <pattern id={`stripe-${anime.id}`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <rect width="5" height="10" fill="oklch(20% 0.02 260)" />
@@ -1276,7 +1288,19 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
           {/* Cover + info */}
           <div style={adStyles.hero}>
             <div style={adStyles.coverLarge}>
-              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              {anime.cover_url ? (
+                <img
+                  src={anime.cover_url}
+                  alt={anime.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
+                />
+              ) : null}
+              <svg
+                width="100%" height="100%"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: anime.cover_url ? 'none' : 'block' }}
+              >
                 <defs>
                   <pattern id="stripe-detail" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                     <rect width="7" height="14" fill="oklch(20% 0.02 260)" />
@@ -1526,18 +1550,25 @@ const adStyles = {
   },
 };
 
-// AnimeForm — modal pour ajouter ou modifier un anime (avec genres)
+// AnimeForm — modal pour ajouter ou modifier un anime (avec recherche Jikan + genres)
 function AnimeForm({ anime, onClose, onSaved }) {
   const isEdit = Boolean(anime);
   const [form, setForm] = useState({
-    name:     anime?.name     || '',
-    synopsis: anime?.synopsis || '',
-    status:   anime?.status   || 'en cours',
-    genres:   anime?.genres   || [],
+    name:      anime?.name      || '',
+    synopsis:  anime?.synopsis  || '',
+    status:    anime?.status    || 'en cours',
+    genres:    anime?.genres    || [],
+    cover_url: anime?.cover_url || '',
   });
-  const [allGenres, setAllGenres] = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
+  const [allGenres, setAllGenres]   = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
+
+  // Jikan search
+  const [jikanResults, setJikanResults] = useState([]);
+  const [jikanLoading, setJikanLoading] = useState(false);
+  const [searchTimer, setSearchTimer]   = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     apiGetGenres().then(data => setAllGenres(data.map(g => g.name))).catch(() => {});
@@ -1554,23 +1585,51 @@ function AnimeForm({ anime, onClose, onSaved }) {
     }));
   };
 
+  // Recherche Jikan avec debounce 600ms
+  const handleNameChange = (val) => {
+    set('name', val);
+    if (searchTimer) clearTimeout(searchTimer);
+    if (val.trim().length < 2) { setJikanResults([]); setShowSuggestions(false); return; }
+    const t = setTimeout(async () => {
+      setJikanLoading(true);
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(val)}&limit=5&sfw=true`);
+        const data = await res.json();
+        setJikanResults(data.data || []);
+        setShowSuggestions(true);
+      } catch(e) {
+        setJikanResults([]);
+      } finally {
+        setJikanLoading(false);
+      }
+    }, 600);
+    setSearchTimer(t);
+  };
+
+  // Sélection d'un résultat Jikan → auto-fill
+  const handleSelectJikan = (result) => {
+    setForm(f => ({
+      ...f,
+      name:      result.title_french || result.title,
+      synopsis:  result.synopsis
+        ? result.synopsis.replace(/\[Written by MAL Rewrite\]/g, '').trim()
+        : f.synopsis,
+      cover_url: result.images?.jpg?.large_image_url || result.images?.jpg?.image_url || '',
+    }));
+    setJikanResults([]);
+    setShowSuggestions(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('Le nom est obligatoire.'); return; }
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      if (isEdit) {
-        await apiUpdateAnime(anime.id, form);
-      } else {
-        await apiAddAnime(form);
-      }
+      if (isEdit) { await apiUpdateAnime(anime.id, form); }
+      else { await apiAddAnime(form); }
       onSaved();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
   const onBackdrop = (e) => { if (e.target === e.currentTarget) onClose(); };
@@ -1593,17 +1652,83 @@ function AnimeForm({ anime, onClose, onSaved }) {
         </div>
 
         <form style={afStyles.form} onSubmit={handleSubmit}>
+
+          {/* Nom + suggestions Jikan */}
           <div style={afStyles.field}>
-            <label style={afStyles.label}>Nom <span style={{ color: 'var(--accent)' }}>*</span></label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => set('name', e.target.value)}
-              placeholder="Ex: Fullmetal Alchemist"
-              autoFocus
-            />
+            <label style={afStyles.label}>
+              Nom <span style={{ color: 'var(--accent)' }}>*</span>
+              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--text-lo)', fontWeight: 400 }}>
+                — tape pour rechercher sur MyAnimeList
+              </span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => handleNameChange(e.target.value)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={() => jikanResults.length > 0 && setShowSuggestions(true)}
+                placeholder="Ex: Fullmetal Alchemist"
+                autoFocus
+              />
+              {jikanLoading && (
+                <div style={afStyles.jikanSpinner}>
+                  <div style={afStyles.spinner}></div>
+                </div>
+              )}
+              {showSuggestions && jikanResults.length > 0 && (
+                <div style={afStyles.suggestions}>
+                  {jikanResults.map(r => (
+                    <button
+                      key={r.mal_id}
+                      type="button"
+                      style={afStyles.suggestion}
+                      onMouseDown={() => handleSelectJikan(r)}
+                    >
+                      {r.images?.jpg?.image_url && (
+                        <img
+                          src={r.images.jpg.image_url}
+                          alt=""
+                          style={afStyles.suggestionImg}
+                        />
+                      )}
+                      <div style={afStyles.suggestionInfo}>
+                        <span style={afStyles.suggestionTitle}>{r.title_french || r.title}</span>
+                        <span style={afStyles.suggestionMeta}>
+                          {r.title !== (r.title_french || r.title) ? r.title + ' · ' : ''}
+                          {r.year || ''} {r.type || ''}
+                        </span>
+                      </div>
+                      <span style={afStyles.suggestionFill}>Auto-remplir →</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Cover preview */}
+          <div style={afStyles.field}>
+            <label style={afStyles.label}>Cover</label>
+            <div style={afStyles.coverRow}>
+              {form.cover_url ? (
+                <img src={form.cover_url} alt="cover" style={afStyles.coverPreview} onError={e => e.target.style.display='none'} />
+              ) : (
+                <div style={afStyles.coverPlaceholder}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+              )}
+              <input
+                type="text"
+                value={form.cover_url}
+                onChange={e => set('cover_url', e.target.value)}
+                placeholder="URL auto-remplie ou colle une URL..."
+                style={{ flex: 1 }}
+              />
+            </div>
+          </div>
+
+          {/* Synopsis */}
           <div style={afStyles.field}>
             <label style={afStyles.label}>Synopsis</label>
             <textarea
@@ -1615,23 +1740,21 @@ function AnimeForm({ anime, onClose, onSaved }) {
             />
           </div>
 
+          {/* Statut */}
           <div style={afStyles.field}>
             <label style={afStyles.label}>Statut</label>
             <div style={afStyles.statusGroup}>
               {['en cours', 'terminé', 'à venir'].map(s => (
                 <button
-                  key={s}
-                  type="button"
+                  key={s} type="button"
                   onClick={() => set('status', s)}
-                  style={{
-                    ...afStyles.statusOption,
-                    ...(form.status === s ? afStyles.statusOptionActive : {}),
-                  }}
+                  style={{ ...afStyles.statusOption, ...(form.status === s ? afStyles.statusOptionActive : {}) }}
                 >{s}</button>
               ))}
             </div>
           </div>
 
+          {/* Genres */}
           <div style={afStyles.field}>
             <label style={afStyles.label}>
               Genres
@@ -1642,9 +1765,7 @@ function AnimeForm({ anime, onClose, onSaved }) {
               )}
             </label>
             {allGenres.length === 0 ? (
-              <p style={{ fontSize: '12px', color: 'var(--text-lo)' }}>
-                Aucun genre disponible — crée-en dans la section Genres.
-              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-lo)' }}>Aucun genre disponible — crée-en dans la section Genres.</p>
             ) : (
               <div style={afStyles.genreGrid}>
                 {allGenres.map(name => {
@@ -1652,8 +1773,7 @@ function AnimeForm({ anime, onClose, onSaved }) {
                   const hue = tagColor(name);
                   return (
                     <button
-                      key={name}
-                      type="button"
+                      key={name} type="button"
                       onClick={() => toggleGenre(name)}
                       style={{
                         ...afStyles.genreTag,
@@ -1686,141 +1806,35 @@ function AnimeForm({ anime, onClose, onSaved }) {
 }
 
 const afStyles = {
-  backdrop: {
-    position: 'fixed',
-    inset: 0,
-    background: 'oklch(0% 0 0 / 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(4px)',
-  },
-  modal: {
-    background: 'var(--bg-surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-lg)',
-    width: '100%',
-    maxWidth: '500px',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-    boxShadow: '0 32px 80px oklch(0% 0 0 / 0.6)',
-  },
-  modalHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '20px 24px',
-    borderBottom: '1px solid var(--border)',
-    position: 'sticky',
-    top: 0,
-    background: 'var(--bg-surface)',
-    zIndex: 1,
-  },
-  modalTitle: {
-    fontFamily: 'var(--font-head)',
-    fontWeight: '700',
-    fontSize: '18px',
-    color: 'var(--text-hi)',
-  },
-  closeBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--text-lo)',
-    cursor: 'pointer',
-    padding: '4px',
-    borderRadius: '4px',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '18px',
-    padding: '24px',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: 'var(--text-mid)',
-  },
-  statusGroup: {
-    display: 'flex',
-    gap: '8px',
-  },
-  statusOption: {
-    flex: 1,
-    padding: '8px 0',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--text-lo)',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    textTransform: 'capitalize',
-    transition: 'all 0.15s',
-  },
-  statusOptionActive: {
-    background: 'var(--accent-glow)',
-    borderColor: 'var(--accent)',
-    color: 'var(--text-hi)',
-  },
-  genreGrid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px',
-  },
-  genreTag: {
-    padding: '5px 12px',
-    borderRadius: '100px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  errorMsg: {
-    background: 'oklch(30% 0.08 20 / 0.2)',
-    border: '1px solid oklch(50% 0.1 20 / 0.4)',
-    borderRadius: 'var(--radius-sm)',
-    padding: '10px 14px',
-    color: 'var(--red)',
-    fontSize: '13px',
-  },
-  footer: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '10px',
-    paddingTop: '4px',
-  },
-  cancelBtn: {
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-mid)',
-    padding: '9px 20px',
-    borderRadius: 'var(--radius-sm)',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  submitBtn: {
-    background: 'var(--accent)',
-    border: 'none',
-    color: '#fff',
-    padding: '9px 24px',
-    borderRadius: 'var(--radius-sm)',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-  },
+  backdrop: { position: 'fixed', inset: 0, background: 'oklch(0% 0 0 / 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' },
+  modal: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 32px 80px oklch(0% 0 0 / 0.6)' },
+  modalHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 1 },
+  modalTitle: { fontFamily: 'var(--font-head)', fontWeight: '700', fontSize: '18px', color: 'var(--text-hi)' },
+  closeBtn: { background: 'transparent', border: 'none', color: 'var(--text-lo)', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px 24px' },
+  field: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  label: { fontSize: '13px', fontWeight: '500', color: 'var(--text-mid)' },
+  jikanSpinner: { position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' },
+  spinner: { width: '14px', height: '14px', border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' },
+  suggestions: { position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', zIndex: 100, overflow: 'hidden', boxShadow: '0 12px 40px oklch(0% 0 0 / 0.5)' },
+  suggestion: { width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s', borderBottom: '1px solid var(--border)' },
+  suggestionImg: { width: '32px', height: '44px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 },
+  suggestionInfo: { flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 },
+  suggestionTitle: { fontSize: '13px', fontWeight: '600', color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  suggestionMeta: { fontSize: '11px', color: 'var(--text-lo)' },
+  suggestionFill: { fontSize: '11px', color: 'var(--accent)', fontWeight: '500', flexShrink: 0, opacity: 0.7 },
+  coverRow: { display: 'flex', alignItems: 'center', gap: '12px' },
+  coverPreview: { width: '48px', height: '64px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', flexShrink: 0 },
+  coverPlaceholder: { width: '48px', height: '64px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-lo)', flexShrink: 0 },
+  statusGroup: { display: 'flex', gap: '8px' },
+  statusOption: { flex: 1, padding: '8px 0', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-lo)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', textTransform: 'capitalize', transition: 'all 0.15s' },
+  statusOptionActive: { background: 'var(--accent-glow)', borderColor: 'var(--accent)', color: 'var(--text-hi)' },
+  genreGrid: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
+  genreTag: { padding: '5px 12px', borderRadius: '100px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center' },
+  errorMsg: { background: 'oklch(30% 0.08 20 / 0.2)', border: '1px solid oklch(50% 0.1 20 / 0.4)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', color: 'var(--red)', fontSize: '13px' },
+  footer: { display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '4px' },
+  cancelBtn: { background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-mid)', padding: '9px 20px', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: '500', cursor: 'pointer' },
+  submitBtn: { background: 'var(--accent)', border: 'none', color: '#fff', padding: '9px 24px', borderRadius: 'var(--radius-sm)', fontSize: '14px', fontWeight: '600', cursor: 'pointer' },
 };
 
 // UserList — gestion des utilisateurs
