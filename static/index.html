@@ -35,46 +35,27 @@
       --font-body:  'Inter', sans-serif;
     }
     html, body, #root { height: 100%; }
-    body {
-      background: var(--bg-deep);
-      color: var(--text-hi);
-      font-family: var(--font-body);
-      font-size: 14px;
-      line-height: 1.6;
-      overflow: hidden;
-    }
+    body { background: var(--bg-deep); color: var(--text-hi); font-family: var(--font-body); font-size: 14px; line-height: 1.6; overflow: hidden; }
     #root { display: flex; flex-direction: column; }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    input, textarea, select {
-      font-family: var(--font-body);
-      background: var(--bg-deep);
-      border: 1px solid var(--border);
-      color: var(--text-hi);
-      border-radius: var(--radius-sm);
-      padding: 8px 12px;
-      font-size: 14px;
-      transition: border-color 0.15s;
-      width: 100%;
-      outline: none;
-    }
+    input, textarea, select { font-family: var(--font-body); background: var(--bg-deep); border: 1px solid var(--border); color: var(--text-hi); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 14px; transition: border-color 0.15s; width: 100%; outline: none; }
     input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     button { cursor: pointer; font-family: var(--font-body); }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script>
     var MOCK_MODE = false;
     var _mockAnimes = [
-      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'terminé' },
-      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'terminé' },
-      { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours' },
-      { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours' },
-      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'terminé' },
-      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir' },
+      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'terminé', genres: ['Action', 'Seinen'] },
+      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'terminé', genres: ['Action', 'Shōnen'] },
+      { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours', genres: ['Action', 'Shōnen'] },
+      { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours', genres: ['Action', 'Shōnen'] },
+      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'terminé', genres: ['Seinen'] },
+      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir', genres: ['Slice of Life', 'Seinen'] },
     ];
     var _mockUsers = [
       { id: 1, pseudo: 'otaku42' },
@@ -85,11 +66,19 @@
       { name: 'Shōnen' }, { name: 'Seinen' }, { name: 'Isekai' },
       { name: 'Action' }, { name: 'Romance' }, { name: 'Slice of Life' },
     ];
+    var _mockUserAnimes = [
+      { user_id: 1, anime_id: 1, statut: 'Vu', note: 10 },
+      { user_id: 1, anime_id: 3, statut: 'En cours de visionnage', note: 8 },
+      { user_id: 2, anime_id: 2, statut: 'Vu', note: 9 },
+      { user_id: 2, anime_id: 5, statut: 'À voir', note: null },
+      { user_id: 3, anime_id: 6, statut: 'À voir', note: null },
+    ];
     var _mockId = 100;
-    function mockDelay(data) { return new Promise(function(r){ setTimeout(function(){ r(JSON.parse(JSON.stringify(data))); }, 300); }); }
+
+    function mockDelay(data) { return new Promise(function(r){ setTimeout(function(){ r(JSON.parse(JSON.stringify(data))); }, 250); }); }
     function mockGetAnimes() { return mockDelay(_mockAnimes); }
     function mockGetAnime(id) { var a = _mockAnimes.find(function(x){ return x.id === id; }); return a ? mockDelay(a) : Promise.reject(new Error('Anime non trouvé')); }
-    function mockAddAnime(data) { var a = Object.assign({ id: ++_mockId }, data); _mockAnimes.push(a); return mockDelay({ message: 'ok' }); }
+    function mockAddAnime(data) { var a = Object.assign({ id: ++_mockId, genres: [] }, data); _mockAnimes.push(a); return mockDelay(a); }
     function mockUpdateAnime(id, data) { var i = _mockAnimes.findIndex(function(x){ return x.id === id; }); if (i < 0) return Promise.reject(new Error('Non trouvé')); _mockAnimes[i] = Object.assign({}, _mockAnimes[i], data); return mockDelay(_mockAnimes[i]); }
     function mockDeleteAnime(id) { _mockAnimes = _mockAnimes.filter(function(x){ return x.id !== id; }); return mockDelay({ message: 'ok' }); }
     function mockGetUsers() { return mockDelay(_mockUsers); }
@@ -97,16 +86,39 @@
     function mockDeleteUser(id) { _mockUsers = _mockUsers.filter(function(x){ return x.id !== id; }); return mockDelay({ message: 'ok' }); }
     function mockGetGenres() { return mockDelay(_mockGenres); }
     function mockAddGenre(data) { _mockGenres.push({ name: data.name }); return mockDelay({ message: 'ok' }); }
+    function mockGetUserAnimes(userId) {
+      var list = _mockUserAnimes.filter(function(ua){ return ua.user_id === userId; });
+      var result = list.map(function(ua) {
+        var anime = _mockAnimes.find(function(a){ return a.id === ua.anime_id; }) || {};
+        return Object.assign({}, ua, { anime_name: anime.name || '?', anime_status: anime.status || '', anime_genres: anime.genres || [] });
+      });
+      return mockDelay(result);
+    }
+    function mockAddUserAnime(userId, data) {
+      var exists = _mockUserAnimes.find(function(ua){ return ua.user_id === userId && ua.anime_id === data.anime_id; });
+      if (exists) return Promise.reject(new Error('Cet anime est déjà dans la liste'));
+      var entry = { user_id: userId, anime_id: data.anime_id, statut: data.statut || 'À voir', note: data.note || null };
+      _mockUserAnimes.push(entry);
+      var anime = _mockAnimes.find(function(a){ return a.id === data.anime_id; }) || {};
+      return mockDelay(Object.assign({}, entry, { anime_name: anime.name || '?', anime_genres: anime.genres || [] }));
+    }
+    function mockUpdateUserAnime(userId, animeId, data) {
+      var i = _mockUserAnimes.findIndex(function(ua){ return ua.user_id === userId && ua.anime_id === animeId; });
+      if (i < 0) return Promise.reject(new Error('Non trouvé'));
+      _mockUserAnimes[i] = Object.assign({}, _mockUserAnimes[i], data);
+      return mockDelay(_mockUserAnimes[i]);
+    }
+    function mockDeleteUserAnime(userId, animeId) {
+      _mockUserAnimes = _mockUserAnimes.filter(function(ua){ return !(ua.user_id === userId && ua.anime_id === animeId); });
+      return mockDelay({ message: 'ok' });
+    }
 
     var API_BASE = '';
     async function apiFetch(path, options) {
       options = options || {};
       try {
         var res = await fetch(API_BASE + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, options));
-        if (!res.ok) {
-          var err = await res.json().catch(function(){ return {}; });
-          throw new Error(err.error || err.erreur || 'Erreur ' + res.status);
-        }
+        if (!res.ok) { var err = await res.json().catch(function(){ return {}; }); throw new Error(err.error || err.erreur || 'Erreur ' + res.status); }
         return res.json();
       } catch(e) {
         if (e instanceof TypeError) throw new Error('Impossible de contacter le serveur');
@@ -127,7 +139,6 @@
   </script>
 
   <script type="text/babel">
-    // ── Hooks React globaux (déclarés une seule fois) ──────────────────────
     const { useState, useEffect, useCallback, useRef } = React;
 
 // tweaks-panel.jsx
@@ -789,6 +800,16 @@ function AnimeCard({ anime, onSelect, onDelete }) {
           <span style={{ ...animeCardStyles.statusDot, background: statusColor }}></span>
           {anime.status}
         </span>
+        {anime.genres && anime.genres.length > 0 && (
+          <div style={animeCardStyles.genreRow}>
+            {anime.genres.slice(0, 3).map(g => (
+              <span key={g} style={animeCardStyles.genreTag}>{g}</span>
+            ))}
+            {anime.genres.length > 3 && (
+              <span style={animeCardStyles.genreMore}>+{anime.genres.length - 3}</span>
+            )}
+          </div>
+        )}
         {anime.synopsis && (
           <p style={animeCardStyles.synopsis}>{anime.synopsis.slice(0, 80)}{anime.synopsis.length > 80 ? '…' : ''}</p>
         )}
@@ -887,6 +908,30 @@ const animeCardStyles = {
     color: 'var(--text-lo)',
     lineHeight: 1.5,
     textWrap: 'pretty',
+  },
+  genreRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '4px',
+    marginTop: '2px',
+  },
+  genreTag: {
+    fontSize: '10px',
+    fontWeight: '500',
+    padding: '2px 7px',
+    borderRadius: '100px',
+    background: 'oklch(65% 0.22 320 / 0.12)',
+    color: 'oklch(75% 0.18 320)',
+    border: '1px solid oklch(65% 0.22 320 / 0.25)',
+  },
+  genreMore: {
+    fontSize: '10px',
+    fontWeight: '500',
+    padding: '2px 7px',
+    borderRadius: '100px',
+    background: 'var(--bg-hover)',
+    color: 'var(--text-lo)',
+    border: '1px solid var(--border)',
   },
 };
 
@@ -1162,18 +1207,46 @@ const alStyles = {
 // AnimeDetail — page détail d'un anime avec édition inline
 
 function AnimeDetail({ animeId, onBack, onEdit }) {
-  const [anime, setAnime]   = useState(null);
+  const [anime, setAnime]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
+  const [error, setError]     = useState(null);
+  const [users, setUsers]     = useState([]);
+  const [showAddList, setShowAddList] = useState(false);
+  const [addUserId, setAddUserId]     = useState('');
+  const [addStatut, setAddStatut]     = useState('À voir');
+  const [addNote, setAddNote]         = useState('');
+  const [addMsg, setAddMsg]           = useState(null);
+  const [addErr, setAddErr]           = useState(null);
+  const [adding, setAdding]           = useState(false);
+
+  const STATUTS = ['Vu', 'En cours de visionnage', 'À voir', 'Abandonné'];
 
   useEffect(() => {
     if (!animeId) return;
-    setLoading(true);
-    setError(null);
-    apiGetAnime(animeId)
-      .then(data => { setAnime(data); setLoading(false); })
+    setLoading(true); setError(null);
+    Promise.all([
+      apiGetAnime(animeId),
+      apiGetUsers(),
+    ]).then(([a, u]) => { setAnime(a); setUsers(u); setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
   }, [animeId]);
+
+  const handleAddToList = async (e) => {
+    e.preventDefault();
+    if (!addUserId) { setAddErr("Choisis un utilisateur."); return; }
+    setAdding(true); setAddErr(null); setAddMsg(null);
+    try {
+      await (MOCK_MODE
+        ? mockAddUserAnime(parseInt(addUserId), { anime_id: animeId, statut: addStatut, note: addNote ? parseInt(addNote) : null })
+        : apiFetch('/users/' + addUserId + '/animes', { method: 'POST', body: JSON.stringify({ anime_id: animeId, statut: addStatut, note: addNote ? parseInt(addNote) : null }) })
+      );
+      const u = users.find(x => x.id === parseInt(addUserId));
+      setAddMsg('Ajouté à la liste de ' + (u ? u.pseudo : 'l\'utilisateur') + ' !');
+      setAddUserId(''); setAddStatut('À voir'); setAddNote('');
+      setTimeout(() => { setAddMsg(null); setShowAddList(false); }, 2000);
+    } catch(err) { setAddErr(err.message); }
+    finally { setAdding(false); }
+  };
 
   const statusMeta = {
     'en cours':  { color: 'var(--green)',  label: 'En cours' },
@@ -1224,6 +1297,32 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
                 </span>
               </div>
               <div style={adStyles.synopsis}>
+                <h3 style={adStyles.sectionLabel}>Genres</h3>
+                {anime.genres && anime.genres.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {anime.genres.map(g => {
+                      const hues = [320, 200, 145, 260, 30, 85, 180, 350];
+                      let hash = 0;
+                      for (let i = 0; i < g.length; i++) hash = g.charCodeAt(i) + ((hash << 5) - hash);
+                      const hue = hues[Math.abs(hash) % hues.length];
+                      return (
+                        <span key={g} style={{
+                          padding: '4px 12px',
+                          borderRadius: '100px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          background: `oklch(55% 0.14 ${hue} / 0.15)`,
+                          border: `1px solid oklch(55% 0.14 ${hue} / 0.35)`,
+                          color: `oklch(75% 0.14 ${hue})`,
+                        }}>{g}</span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--text-lo)', fontStyle: 'italic', fontSize: '13px' }}>Aucun genre assigné.</p>
+                )}
+              </div>
+              <div style={adStyles.synopsis}>
                 <h3 style={adStyles.sectionLabel}>Synopsis</h3>
                 <p style={adStyles.synopsisText}>
                   {anime.synopsis || <span style={{ color: 'var(--text-lo)', fontStyle: 'italic' }}>Aucun synopsis disponible.</span>}
@@ -1234,7 +1333,38 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Modifier
                 </button>
+                <button style={adStyles.addListBtn} onClick={() => setShowAddList(s => !s)}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Ajouter à une liste
+                </button>
               </div>
+
+              {showAddList && (
+                <form style={adStyles.addListForm} onSubmit={handleAddToList}>
+                  <h3 style={adStyles.addListTitle}>Ajouter à la liste d'un utilisateur</h3>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select value={addUserId} onChange={e => setAddUserId(e.target.value)} style={{ flex: 2, minWidth: '140px' }}>
+                      <option value="">-- Utilisateur --</option>
+                      {users.map(u => <option key={u.id} value={u.id}>{u.pseudo}</option>)}
+                    </select>
+                    <select value={addStatut} onChange={e => setAddStatut(e.target.value)} style={{ flex: 2, minWidth: '160px' }}>
+                      {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <input
+                      type="number" min="1" max="10"
+                      placeholder="Note /10"
+                      value={addNote}
+                      onChange={e => setAddNote(e.target.value)}
+                      style={{ flex: 1, minWidth: '80px' }}
+                    />
+                    <button type="submit" style={adStyles.editBtn} disabled={adding}>
+                      {adding ? '…' : 'Ajouter'}
+                    </button>
+                  </div>
+                  {addErr && <p style={{ color: 'var(--red)', fontSize: '12px', marginTop: '8px' }}>{addErr}</p>}
+                  {addMsg && <p style={{ color: 'var(--green)', fontSize: '12px', marginTop: '8px' }}>✓ {addMsg}</p>}
+                </form>
+              )}
             </div>
           </div>
         </div>
@@ -1367,21 +1497,62 @@ const adStyles = {
     borderRadius: 'var(--radius-sm)',
     cursor: 'pointer',
   },
+  addListBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'transparent',
+    border: '1px solid var(--accent)',
+    color: 'var(--accent)',
+    fontWeight: '600',
+    fontSize: '14px',
+    padding: '9px 20px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+  },
+  addListForm: {
+    marginTop: '20px',
+    padding: '18px 20px',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    maxWidth: '560px',
+  },
+  addListTitle: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'var(--text-mid)',
+    marginBottom: '12px',
+  },
 };
 
-// AnimeForm — modal pour ajouter ou modifier un anime
-
+// AnimeForm — modal pour ajouter ou modifier un anime (avec genres)
 function AnimeForm({ anime, onClose, onSaved }) {
   const isEdit = Boolean(anime);
   const [form, setForm] = useState({
     name:     anime?.name     || '',
     synopsis: anime?.synopsis || '',
     status:   anime?.status   || 'en cours',
+    genres:   anime?.genres   || [],
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [allGenres, setAllGenres] = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState(null);
+
+  useEffect(() => {
+    apiGetGenres().then(data => setAllGenres(data.map(g => g.name))).catch(() => {});
+  }, []);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const toggleGenre = (name) => {
+    setForm(f => ({
+      ...f,
+      genres: f.genres.includes(name)
+        ? f.genres.filter(g => g !== name)
+        : [...f.genres, name],
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1402,14 +1573,20 @@ function AnimeForm({ anime, onClose, onSaved }) {
     }
   };
 
-  // Close on backdrop click
   const onBackdrop = (e) => { if (e.target === e.currentTarget) onClose(); };
+
+  const tagColor = (name) => {
+    const hues = [320, 200, 145, 260, 30, 85, 180, 350];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return hues[Math.abs(hash) % hues.length];
+  };
 
   return (
     <div style={afStyles.backdrop} onClick={onBackdrop}>
       <div style={afStyles.modal}>
         <div style={afStyles.modalHeader}>
-          <h2 style={afStyles.modalTitle}>{isEdit ? 'Modifier l\'anime' : 'Ajouter un anime'}</h2>
+          <h2 style={afStyles.modalTitle}>{isEdit ? "Modifier l'anime" : 'Ajouter un anime'}</h2>
           <button style={afStyles.closeBtn} onClick={onClose}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -1433,7 +1610,7 @@ function AnimeForm({ anime, onClose, onSaved }) {
               value={form.synopsis}
               onChange={e => set('synopsis', e.target.value)}
               placeholder="Description de l'anime..."
-              rows={4}
+              rows={3}
               style={{ resize: 'vertical' }}
             />
           </div>
@@ -1450,11 +1627,48 @@ function AnimeForm({ anime, onClose, onSaved }) {
                     ...afStyles.statusOption,
                     ...(form.status === s ? afStyles.statusOptionActive : {}),
                   }}
-                >
-                  {s}
-                </button>
+                >{s}</button>
               ))}
             </div>
+          </div>
+
+          <div style={afStyles.field}>
+            <label style={afStyles.label}>
+              Genres
+              {form.genres.length > 0 && (
+                <span style={{ color: 'var(--accent)', marginLeft: '6px', fontSize: '11px' }}>
+                  {form.genres.length} sélectionné{form.genres.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </label>
+            {allGenres.length === 0 ? (
+              <p style={{ fontSize: '12px', color: 'var(--text-lo)' }}>
+                Aucun genre disponible — crée-en dans la section Genres.
+              </p>
+            ) : (
+              <div style={afStyles.genreGrid}>
+                {allGenres.map(name => {
+                  const selected = form.genres.includes(name);
+                  const hue = tagColor(name);
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => toggleGenre(name)}
+                      style={{
+                        ...afStyles.genreTag,
+                        background: selected ? `oklch(55% 0.14 ${hue} / 0.2)` : 'var(--bg-deep)',
+                        border: selected ? `1px solid oklch(55% 0.14 ${hue} / 0.6)` : '1px solid var(--border)',
+                        color: selected ? `oklch(75% 0.14 ${hue})` : 'var(--text-lo)',
+                      }}
+                    >
+                      {selected && <span style={{ marginRight: '4px', fontSize: '10px' }}>✓</span>}
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {error && <div style={afStyles.errorMsg}>{error}</div>}
@@ -1487,7 +1701,9 @@ const afStyles = {
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius-lg)',
     width: '100%',
-    maxWidth: '480px',
+    maxWidth: '500px',
+    maxHeight: '90vh',
+    overflowY: 'auto',
     boxShadow: '0 32px 80px oklch(0% 0 0 / 0.6)',
   },
   modalHeader: {
@@ -1496,6 +1712,10 @@ const afStyles = {
     justifyContent: 'space-between',
     padding: '20px 24px',
     borderBottom: '1px solid var(--border)',
+    position: 'sticky',
+    top: 0,
+    background: 'var(--bg-surface)',
+    zIndex: 1,
   },
   modalTitle: {
     fontFamily: 'var(--font-head)',
@@ -1522,7 +1742,7 @@ const afStyles = {
   field: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '8px',
   },
   label: {
     fontSize: '13px',
@@ -1550,6 +1770,21 @@ const afStyles = {
     background: 'var(--accent-glow)',
     borderColor: 'var(--accent)',
     color: 'var(--text-hi)',
+  },
+  genreGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+  },
+  genreTag: {
+    padding: '5px 12px',
+    borderRadius: '100px',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    display: 'flex',
+    alignItems: 'center',
   },
   errorMsg: {
     background: 'oklch(30% 0.08 20 / 0.2)',
@@ -1584,14 +1819,13 @@ const afStyles = {
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
-    opacity: 1,
     transition: 'opacity 0.15s',
   },
 };
 
 // UserList — gestion des utilisateurs
 
-function UserList() {
+function UserList({ onSelectUser }) {
   const [users, setUsers]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -1709,6 +1943,13 @@ function UserList() {
                 <span style={ulStyles.pseudo}>{user.pseudo}</span>
                 <span style={ulStyles.userId}>#{user.id}</span>
               </div>
+              <button
+                style={ulStyles.profileBtn}
+                onClick={() => onSelectUser(user)}
+                title="Voir la liste"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
               <button
                 style={ulStyles.deleteBtn}
                 onClick={() => handleDelete(user.id, user.pseudo)}
@@ -1843,6 +2084,17 @@ const ulStyles = {
     color: 'var(--text-lo)',
     fontFamily: 'monospace',
   },
+  profileBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--accent)',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color 0.15s',
+  },
   deleteBtn: {
     background: 'transparent',
     border: 'none',
@@ -1895,6 +2147,249 @@ const ulStyles = {
     color: 'var(--text-lo)',
     padding: '40px',
   },
+};
+
+// UserProfile — liste des animes d'un utilisateur
+function UserProfile({ user, onBack }) {
+  const [list, setList]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [animes, setAnimes]     = useState([]);
+  const [search, setSearch]     = useState('');
+  const [showAdd, setShowAdd]   = useState(false);
+  const [addAnimeId, setAddAnimeId] = useState('');
+  const [addStatut, setAddStatut]   = useState('À voir');
+  const [addNote, setAddNote]       = useState('');
+  const [adding, setAdding]         = useState(false);
+  const [addError, setAddError]     = useState(null);
+  const [editEntry, setEditEntry]   = useState(null); // { anime_id, statut, note }
+
+  const STATUTS = ['Vu', 'En cours de visionnage', 'À voir', 'Abandonné'];
+  const STATUT_COLORS = {
+    'Vu':                   { bg: 'oklch(65% 0.18 145 / 0.15)', border: 'oklch(65% 0.18 145 / 0.4)', text: 'oklch(65% 0.18 145)' },
+    'En cours de visionnage':{ bg: 'oklch(65% 0.22 320 / 0.15)', border: 'oklch(65% 0.22 320 / 0.4)', text: 'oklch(65% 0.22 320)' },
+    'À voir':               { bg: 'oklch(75% 0.16 85 / 0.15)',  border: 'oklch(75% 0.16 85 / 0.4)',  text: 'oklch(75% 0.16 85)' },
+    'Abandonné':            { bg: 'oklch(60% 0.2 20 / 0.15)',   border: 'oklch(60% 0.2 20 / 0.4)',   text: 'oklch(60% 0.2 20)' },
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const [listData, animesData] = await Promise.all([
+        MOCK_MODE ? mockGetUserAnimes(user.id) : apiFetch('/users/' + user.id + '/animes'),
+        apiGetAnimes(),
+      ]);
+      setList(listData);
+      setAnimes(animesData);
+    } catch(e) { setError(e.message); }
+    finally { setLoading(false); }
+  }, [user.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!addAnimeId) { setAddError('Choisis un anime.'); return; }
+    setAdding(true); setAddError(null);
+    try {
+      await (MOCK_MODE
+        ? mockAddUserAnime(user.id, { anime_id: parseInt(addAnimeId), statut: addStatut, note: addNote ? parseInt(addNote) : null })
+        : apiFetch('/users/' + user.id + '/animes', { method: 'POST', body: JSON.stringify({ anime_id: parseInt(addAnimeId), statut: addStatut, note: addNote ? parseInt(addNote) : null }) })
+      );
+      setAddAnimeId(''); setAddStatut('À voir'); setAddNote('');
+      setShowAdd(false);
+      await load();
+    } catch(err) { setAddError(err.message); }
+    finally { setAdding(false); }
+  };
+
+  const handleUpdate = async (anime_id, statut, note) => {
+    try {
+      await (MOCK_MODE
+        ? mockUpdateUserAnime(user.id, anime_id, { statut, note: note ? parseInt(note) : null })
+        : apiFetch('/users/' + user.id + '/animes/' + anime_id, { method: 'PUT', body: JSON.stringify({ statut, note: note ? parseInt(note) : null }) })
+      );
+      setEditEntry(null);
+      await load();
+    } catch(e) { alert('Erreur : ' + e.message); }
+  };
+
+  const handleDelete = async (anime_id, anime_name) => {
+    if (!window.confirm('Retirer "' + anime_name + '" de la liste ?')) return;
+    try {
+      await (MOCK_MODE
+        ? mockDeleteUserAnime(user.id, anime_id)
+        : apiFetch('/users/' + user.id + '/animes/' + anime_id, { method: 'DELETE' })
+      );
+      await load();
+    } catch(e) { alert('Erreur : ' + e.message); }
+  };
+
+  const availableAnimes = animes.filter(a => !list.find(ua => ua.anime_id === a.id));
+  const filtered = list.filter(ua => ua.anime_name.toLowerCase().includes(search.toLowerCase()));
+
+  const renderStars = (note) => {
+    if (!note) return null;
+    return (
+      <span style={upStyles.note}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="oklch(75% 0.16 85)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        {note}/10
+      </span>
+    );
+  };
+
+  return (
+    <div style={upStyles.container}>
+      <button style={upStyles.backBtn} onClick={onBack}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour aux utilisateurs
+      </button>
+
+      <div style={upStyles.header}>
+        <div style={upStyles.avatarLarge}>{user.pseudo[0].toUpperCase()}</div>
+        <div>
+          <h1 style={upStyles.title}>{user.pseudo}</h1>
+          <p style={upStyles.subtitle}>{list.length} anime{list.length !== 1 ? 's' : ''} dans la liste</p>
+        </div>
+        <button style={upStyles.addBtn} onClick={() => setShowAdd(s => !s)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ajouter un anime
+        </button>
+      </div>
+
+      {/* Formulaire ajout */}
+      {showAdd && (
+        <form style={upStyles.addBox} onSubmit={handleAdd}>
+          <h3 style={upStyles.addTitle}>Ajouter à la liste</h3>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <select value={addAnimeId} onChange={e => setAddAnimeId(e.target.value)} style={{ flex: 2, minWidth: '160px' }}>
+              <option value="">-- Choisir un anime --</option>
+              {availableAnimes.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <select value={addStatut} onChange={e => setAddStatut(e.target.value)} style={{ flex: 2, minWidth: '140px' }}>
+              {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input
+              type="number" min="1" max="10"
+              placeholder="Note /10"
+              value={addNote}
+              onChange={e => setAddNote(e.target.value)}
+              style={{ flex: 1, minWidth: '80px' }}
+            />
+            <button type="submit" style={upStyles.submitBtn} disabled={adding}>
+              {adding ? '…' : 'Ajouter'}
+            </button>
+          </div>
+          {addError && <p style={{ color: 'var(--red)', fontSize: '12px', marginTop: '6px' }}>{addError}</p>}
+        </form>
+      )}
+
+      {/* Recherche */}
+      {list.length > 0 && (
+        <div style={upStyles.searchWrap}>
+          <svg style={upStyles.searchIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Rechercher dans la liste..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '34px' }} />
+        </div>
+      )}
+
+      {loading && <div style={upStyles.center}><div style={upStyles.spinner}></div></div>}
+      {error && <div style={upStyles.errorBox}>{error}</div>}
+
+      {!loading && !error && (
+        <div style={upStyles.list}>
+          {filtered.length === 0 && (
+            <div style={upStyles.empty}>
+              {list.length === 0 ? 'Aucun anime dans la liste — ajoutes-en !' : 'Aucun résultat.'}
+            </div>
+          )}
+          {filtered.map(ua => {
+            const sc = STATUT_COLORS[ua.statut] || STATUT_COLORS['À voir'];
+            const isEditing = editEntry && editEntry.anime_id === ua.anime_id;
+            return (
+              <div key={ua.anime_id} style={upStyles.row}>
+                <div style={upStyles.rowInfo}>
+                  <span style={upStyles.animeName}>{ua.anime_name}</span>
+                  {ua.anime_genres && ua.anime_genres.length > 0 && (
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {ua.anime_genres.slice(0, 3).map(g => (
+                        <span key={g} style={upStyles.genreTag}>{g}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={upStyles.rowMeta}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={editEntry.statut}
+                        onChange={e => setEditEntry(p => ({ ...p, statut: e.target.value }))}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <input
+                        type="number" min="1" max="10"
+                        value={editEntry.note || ''}
+                        onChange={e => setEditEntry(p => ({ ...p, note: e.target.value }))}
+                        placeholder="/10"
+                        style={{ width: '60px', fontSize: '12px', padding: '4px 8px' }}
+                      />
+                      <button style={upStyles.saveBtn} onClick={() => handleUpdate(ua.anime_id, editEntry.statut, editEntry.note)}>✓</button>
+                      <button style={upStyles.cancelEditBtn} onClick={() => setEditEntry(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span style={{ ...upStyles.statut, background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
+                        {ua.statut}
+                      </span>
+                      {renderStars(ua.note)}
+                      <button style={upStyles.editBtn} onClick={() => setEditEntry({ anime_id: ua.anime_id, statut: ua.statut, note: ua.note || '' })} title="Modifier">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button style={upStyles.deleteBtn} onClick={() => handleDelete(ua.anime_id, ua.anime_name)} title="Retirer">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const upStyles = {
+  container: { flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
+  backBtn: { display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: 'var(--text-lo)', fontSize: '14px', cursor: 'pointer', padding: '20px 32px 0', flexShrink: 0 },
+  header: { display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 32px', flexShrink: 0 },
+  avatarLarge: { width: '48px', height: '48px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '20px', color: '#fff', flexShrink: 0 },
+  title: { fontFamily: 'var(--font-head)', fontWeight: '700', fontSize: '22px', letterSpacing: '-0.4px', color: 'var(--text-hi)' },
+  subtitle: { color: 'var(--text-lo)', fontSize: '13px', marginTop: '2px' },
+  addBtn: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--accent)', border: 'none', color: '#fff', fontWeight: '600', fontSize: '13px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0 },
+  addBox: { margin: '0 32px 12px', padding: '16px 18px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', flexShrink: 0 },
+  addTitle: { fontSize: '13px', fontWeight: '600', color: 'var(--text-mid)', marginBottom: '10px' },
+  submitBtn: { background: 'var(--accent)', border: 'none', color: '#fff', fontWeight: '600', fontSize: '13px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  searchWrap: { position: 'relative', margin: '0 32px 12px', flexShrink: 0 },
+  searchIcon: { position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-lo)', pointerEvents: 'none' },
+  list: { display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 32px 32px', overflowY: 'auto', flex: 1 },
+  row: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', border: '1px solid var(--border)' },
+  rowInfo: { flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
+  animeName: { fontWeight: '500', fontSize: '14px', color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  genreTag: { fontSize: '10px', fontWeight: '500', padding: '2px 7px', borderRadius: '100px', background: 'oklch(65% 0.22 320 / 0.12)', color: 'oklch(75% 0.18 320)', border: '1px solid oklch(65% 0.22 320 / 0.25)' },
+  rowMeta: { display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 },
+  statut: { padding: '3px 10px', borderRadius: '100px', fontSize: '12px', fontWeight: '500', whiteSpace: 'nowrap' },
+  note: { display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', color: 'oklch(75% 0.16 85)', fontWeight: '600' },
+  editBtn: { background: 'transparent', border: 'none', color: 'var(--text-lo)', cursor: 'pointer', padding: '3px', borderRadius: '4px', display: 'flex', alignItems: 'center' },
+  deleteBtn: { background: 'transparent', border: 'none', color: 'var(--text-lo)', cursor: 'pointer', padding: '3px', borderRadius: '4px', display: 'flex', alignItems: 'center' },
+  saveBtn: { background: 'var(--green)', border: 'none', color: '#fff', fontWeight: '700', fontSize: '13px', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' },
+  cancelEditBtn: { background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-lo)', fontSize: '13px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' },
+  center: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  spinner: { width: '32px', height: '32px', border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' },
+  errorBox: { margin: '16px 32px', padding: '14px 18px', background: 'oklch(30% 0.08 20 / 0.2)', border: '1px solid oklch(50% 0.1 20 / 0.4)', borderRadius: 'var(--radius-md)', color: 'var(--red)' },
+  empty: { textAlign: 'center', color: 'var(--text-lo)', padding: '40px' },
 };
 
 // GenreManager — gestion des genres
@@ -2158,6 +2653,7 @@ function App() {
   const [editAnime, setEditAnime]         = useState(null);
   const [refreshKey, setRefreshKey]       = useState(0);
   const [mockMode, setMockModeState]      = useState(false);
+  const [selectedUser, setSelectedUser]   = useState(null);
 
   const [tweaks, setTweaksState] = useTweaks(TWEAK_DEFAULTS);
 
@@ -2208,7 +2704,7 @@ function App() {
     <div style={{ ...appStyles.shell, ...accentStyle }}>
       <Sidebar
         currentPage={page === 'anime-detail' ? 'animes' : page}
-        onNavigate={(p) => { setPage(p); setSelectedAnime(null); }}
+        onNavigate={(p) => { setPage(p); setSelectedAnime(null); setSelectedUser(null); }}
         mockMode={mockMode}
         onToggleMock={handleToggleMock}
       />
@@ -2228,7 +2724,8 @@ function App() {
             onEdit={handleEditAnime}
           />
         )}
-        {page === 'users'  && <UserList    key={refreshKey} />}
+        {page === 'users'  && !selectedUser && <UserList key={refreshKey} onSelectUser={(u) => setSelectedUser(u)} />}
+        {page === 'users'  && selectedUser  && <UserProfile user={selectedUser} onBack={() => setSelectedUser(null)} />}
         {page === 'genres' && <GenreManager key={refreshKey} />}
       </main>
 
