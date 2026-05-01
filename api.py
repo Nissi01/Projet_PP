@@ -23,6 +23,7 @@ class Anime(db.Model):
     name     = db.Column(db.String(100), nullable=False)
     synopsis = db.Column(db.Text)
     status   = db.Column(db.String(20), default='en cours')
+    cover    = db.Column(db.String(255), nullable=True)
     genres   = db.relationship('Genre', secondary=anime_genres, backref='animes', lazy='subquery')
 
 class User(db.Model):
@@ -48,6 +49,7 @@ def anime_to_dict(a):
     return {
         "id": a.id, "name": a.name,
         "synopsis": a.synopsis, "status": a.status,
+        "cover": a.cover,
         "genres": [g.name for g in a.genres],
     }
 
@@ -86,6 +88,7 @@ def add_anime():
     if not data or 'name' not in data:
         return jsonify({"error": "Le champ 'name' est obligatoire"}), 400
     a = Anime(name=data['name'], synopsis=data.get('synopsis', ''), status=data.get('status', 'en cours'))
+    a.cover = data.get('cover', a.cover)
     for gn in data.get('genres', []):
         g = Genre.query.get(gn)
         if g: a.genres.append(g)
@@ -101,6 +104,7 @@ def update_anime(id):
     a.name = data.get('name', a.name)
     a.synopsis = data.get('synopsis', a.synopsis)
     a.status = data.get('status', a.status)
+    a.cover = data.get('cover', a.cover)
     if 'genres' in data:
         a.genres = []
         for gn in data['genres']:

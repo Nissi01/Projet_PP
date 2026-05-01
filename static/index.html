@@ -773,6 +773,13 @@ function AnimeCard({ anime, onSelect, onDelete }) {
     >
       {/* Cover placeholder */}
       <div style={animeCardStyles.cover} onClick={() => onSelect(anime)}>
+        {anime.cover ? (
+          <img 
+            src={`/covers/${anime.cover}`} 
+            alt={`Cover de ${anime.name}`} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          />
+        ) : (
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id={`stripe-${anime.id}`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -783,6 +790,7 @@ function AnimeCard({ anime, onSelect, onDelete }) {
           <rect width="100%" height="100%" fill={`url(#stripe-${anime.id})`} />
           <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(40% 0.01 260)" fontSize="11" fontFamily="monospace">cover art</text>
         </svg>
+        )}
         <div style={animeCardStyles.coverOverlay}>
           <span style={animeCardStyles.detailBtn}>Voir détails →</span>
         </div>
@@ -1277,16 +1285,24 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
           {/* Cover + info */}
           <div style={adStyles.hero}>
             <div style={adStyles.coverLarge}>
-              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <pattern id="stripe-detail" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                    <rect width="7" height="14" fill="oklch(20% 0.02 260)" />
-                    <rect x="7" width="7" height="14" fill="oklch(17% 0.015 260)" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#stripe-detail)" />
-                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(35% 0.01 260)" fontSize="13" fontFamily="monospace">cover art</text>
-              </svg>
+              {anime.cover ? (
+                <img 
+                  src={`/covers/${anime.cover}`} 
+                  alt={`Cover de ${anime.name}`} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+              ) : (
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <pattern id="stripe-detail" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                      <rect width="7" height="14" fill="oklch(20% 0.02 260)" />
+                      <rect x="7" width="7" height="14" fill="oklch(17% 0.015 260)" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#stripe-detail)" />
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(35% 0.01 260)" fontSize="13" fontFamily="monospace">cover art</text>
+                </svg>
+              )}
             </div>
             <div style={adStyles.heroInfo}>
               <div style={adStyles.idBadge}>#{anime.id}</div>
