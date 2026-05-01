@@ -822,6 +822,7 @@ const animeCardStyles = {
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderColor: 'var(--border)',
     borderRadius: 'var(--radius-md)',
     overflow: 'hidden',
     display: 'flex',
@@ -979,7 +980,7 @@ function AnimeList({ onSelect, onAdd, refreshKey }) {
     return matchSearch && matchFilter;
   });
 
-  const STATUS_FILTERS = ['tous', 'en cours', 'terminé', 'à venir'];
+  const STATUS_FILTERS = ['tous', 'en cours', 'termine', 'à venir'];
 
   return (
     <div style={alStyles.container}>
