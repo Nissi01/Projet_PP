@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AniTrack — MyAnimeList Clone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep:    oklch(10% 0.01 260);
+      --bg-surface: oklch(14% 0.012 260);
+      --bg-card:    oklch(17% 0.015 260);
+      --bg-hover:   oklch(20% 0.018 260);
+      --border:     oklch(25% 0.02 260);
+      --text-hi:    oklch(96% 0.005 260);
+      --text-mid:   oklch(70% 0.01 260);
+      --text-lo:    oklch(45% 0.01 260);
+      --accent:     oklch(65% 0.22 320);
+      --accent-dim: oklch(55% 0.18 320);
+      --accent-glow:oklch(65% 0.22 320 / 0.25);
+      --green:      oklch(65% 0.18 145);
+      --yellow:     oklch(75% 0.16 85);
+      --red:        oklch(60% 0.2 20);
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  16px;
+      --sidebar-w:  220px;
+      --font-head:  'Space Grotesk', sans-serif;
+      --font-body:  'Inter', sans-serif;
+    }
+    html, body, #root { height: 100%; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-hi);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+    #root { display: flex; flex-direction: column; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    input, textarea, select {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      color: var(--text-hi);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 14px;
+      transition: border-color 0.15s;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    button { cursor: pointer; font-family: var(--font-body); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    var MOCK_MODE = false;
+    var _mockAnimes = [
+      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'terminé' },
+      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'terminé' },
+      { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours' },
+      { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours' },
+      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'terminé' },
+      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir' },
+    ];
+    var _mockUsers = [
+      { id: 1, pseudo: 'otaku42' },
+      { id: 2, pseudo: 'sakura_fan' },
+      { id: 3, pseudo: 'nekosan' },
+    ];
+    var _mockGenres = [
+      { name: 'Shōnen' }, { name: 'Seinen' }, { name: 'Isekai' },
+      { name: 'Action' }, { name: 'Romance' }, { name: 'Slice of Life' },
+    ];
+    var _mockId = 100;
+    function mockDelay(data) { return new Promise(function(r){ setTimeout(function(){ r(JSON.parse(JSON.stringify(data))); }, 300); }); }
+    function mockGetAnimes() { return mockDelay(_mockAnimes); }
+    function mockGetAnime(id) { var a = _mockAnimes.find(function(x){ return x.id === id; }); return a ? mockDelay(a) : Promise.reject(new Error('Anime non trouvé')); }
+    function mockAddAnime(data) { var a = Object.assign({ id: ++_mockId }, data); _mockAnimes.push(a); return mockDelay({ message: 'ok' }); }
+    function mockUpdateAnime(id, data) { var i = _mockAnimes.findIndex(function(x){ return x.id === id; }); if (i < 0) return Promise.reject(new Error('Non trouvé')); _mockAnimes[i] = Object.assign({}, _mockAnimes[i], data); return mockDelay(_mockAnimes[i]); }
+    function mockDeleteAnime(id) { _mockAnimes = _mockAnimes.filter(function(x){ return x.id !== id; }); return mockDelay({ message: 'ok' }); }
+    function mockGetUsers() { return mockDelay(_mockUsers); }
+    function mockAddUser(data) { _mockUsers.push({ id: ++_mockId, pseudo: data.pseudo }); return mockDelay({ message: 'ok' }); }
+    function mockDeleteUser(id) { _mockUsers = _mockUsers.filter(function(x){ return x.id !== id; }); return mockDelay({ message: 'ok' }); }
+    function mockGetGenres() { return mockDelay(_mockGenres); }
+    function mockAddGenre(data) { _mockGenres.push({ name: data.name }); return mockDelay({ message: 'ok' }); }
+
+    var API_BASE = '';
+    async function apiFetch(path, options) {
+      options = options || {};
+      try {
+        var res = await fetch(API_BASE + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, options));
+        if (!res.ok) {
+          var err = await res.json().catch(function(){ return {}; });
+          throw new Error(err.error || err.erreur || 'Erreur ' + res.status);
+        }
+        return res.json();
+      } catch(e) {
+        if (e instanceof TypeError) throw new Error('Impossible de contacter le serveur');
+        throw e;
+      }
+    }
+    function setMockMode(val) { MOCK_MODE = val; }
+    function apiGetAnimes()       { return MOCK_MODE ? mockGetAnimes()       : apiFetch('/animes'); }
+    function apiGetAnime(id)      { return MOCK_MODE ? mockGetAnime(id)      : apiFetch('/animes/' + id); }
+    function apiAddAnime(data)    { return MOCK_MODE ? mockAddAnime(data)    : apiFetch('/animes', { method: 'POST', body: JSON.stringify(data) }); }
+    function apiUpdateAnime(id,d) { return MOCK_MODE ? mockUpdateAnime(id,d) : apiFetch('/animes/' + id, { method: 'PUT', body: JSON.stringify(d) }); }
+    function apiDeleteAnime(id)   { return MOCK_MODE ? mockDeleteAnime(id)   : apiFetch('/animes/' + id, { method: 'DELETE' }); }
+    function apiGetUsers()        { return MOCK_MODE ? mockGetUsers()        : apiFetch('/users'); }
+    function apiAddUser(data)     { return MOCK_MODE ? mockAddUser(data)     : apiFetch('/users', { method: 'POST', body: JSON.stringify(data) }); }
+    function apiDeleteUser(id)    { return MOCK_MODE ? mockDeleteUser(id)    : apiFetch('/users/' + id, { method: 'DELETE' }); }
+    function apiGetGenres()       { return MOCK_MODE ? mockGetGenres()       : apiFetch('/genres'); }
+    function apiAddGenre(data)    { return MOCK_MODE ? mockAddGenre(data)    : apiFetch('/genres', { method: 'POST', body: JSON.stringify(data) }); }
+  </script>
+
+  <script type="text/babel">
+    // ── Hooks React globaux (déclarés une seule fois) ──────────────────────
+    const { useState, useEffect, useCallback, useRef } = React;
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;width:100%;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;
+    overflow-wrap:anywhere}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
+  // useState-style call doesn't write a "[object Object]" key into the persisted
+  // JSON block.
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" data-noncommentable=""
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <input className="twk-field" type="text" value={value} placeholder={placeholder}
+             onChange={(e) => onChange(e.target.value)} />
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+function TweakColor({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <input type="color" className="twk-swatch" value={value}
+             onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+// Sidebar navigation component
+
+const NAV_ITEMS = [
+  { id: 'animes',  label: 'Catalogue',     icon: SidebarIcon('M4 6h16M4 12h16M4 18h16') },
+  { id: 'users',   label: 'Utilisateurs',  icon: SidebarIcon('M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75') },
+  { id: 'genres',  label: 'Genres',        icon: SidebarIcon('M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 0 1 0 2.828l-7 7a2 2 0 0 1-2.828 0l-7-7A2 2 0 0 1 3 12V7a4 4 0 0 1 4-4z') },
+];
+
+function SidebarIcon(d) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+function Sidebar({ currentPage, onNavigate, mockMode, onToggleMock }) {
+  return (
+    <aside style={sidebarStyles.sidebar}>
+      {/* Logo */}
+      <div style={sidebarStyles.logo}>
+        <div style={sidebarStyles.logoMark}>A</div>
+        <span style={sidebarStyles.logoText}>AniTrack</span>
+      </div>
+
+      {/* Nav */}
+      <nav style={sidebarStyles.nav}>
+        {NAV_ITEMS.map(item => (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            style={{
+              ...sidebarStyles.navItem,
+              ...(currentPage === item.id ? sidebarStyles.navItemActive : {}),
+            }}
+          >
+            <span style={{ color: currentPage === item.id ? 'var(--accent)' : 'var(--text-lo)' }}>
+              {item.icon}
+            </span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div style={sidebarStyles.footer}>
+        {/* Mock toggle */}
+        <button
+          onClick={onToggleMock}
+          style={{
+            ...sidebarStyles.mockToggle,
+            background: mockMode ? 'oklch(65% 0.18 85 / 0.15)' : 'transparent',
+            borderColor: mockMode ? 'oklch(65% 0.18 85 / 0.5)' : 'var(--border)',
+            color: mockMode ? 'oklch(75% 0.16 85)' : 'var(--text-lo)',
+          }}
+          title={mockMode ? 'Passer en mode API réelle' : 'Passer en mode mock (données de démo)'}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          {mockMode ? 'Mode démo' : 'Mode démo'}
+          <span style={{
+            marginLeft: 'auto',
+            width: '28px', height: '16px',
+            borderRadius: '8px',
+            background: mockMode ? 'oklch(75% 0.16 85)' : 'var(--border)',
+            position: 'relative',
+            transition: 'background 0.2s',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              position: 'absolute',
+              top: '2px',
+              left: mockMode ? '14px' : '2px',
+              width: '12px', height: '12px',
+              borderRadius: '50%',
+              background: '#fff',
+              transition: 'left 0.2s',
+            }}></span>
+          </span>
+        </button>
+
+        <div style={sidebarStyles.apiStatus}>
+          <span style={{
+            ...sidebarStyles.dot,
+            background: mockMode ? 'oklch(75% 0.16 85)' : 'var(--green)',
+          }}></span>
+          <span style={{ color: 'var(--text-lo)', fontSize: '12px' }}>
+            {mockMode ? 'Données simulées' : 'localhost:5001'}
+          </span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+const sidebarStyles = {
+  sidebar: {
+    width: 'var(--sidebar-w)',
+    minWidth: 'var(--sidebar-w)',
+    background: 'var(--bg-surface)',
+    borderRight: '1px solid var(--border)',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    flexShrink: 0,
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '24px 20px 20px',
+    borderBottom: '1px solid var(--border)',
+  },
+  logoMark: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    background: 'var(--accent)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '16px',
+    color: '#fff',
+    flexShrink: 0,
+  },
+  logoText: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '18px',
+    color: 'var(--text-hi)',
+    letterSpacing: '-0.3px',
+  },
+  nav: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    padding: '16px 10px',
+    flex: 1,
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '9px 12px',
+    borderRadius: 'var(--radius-sm)',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-mid)',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'background 0.15s, color 0.15s',
+    textAlign: 'left',
+    width: '100%',
+  },
+  navItemActive: {
+    background: 'var(--accent-glow)',
+    color: 'var(--text-hi)',
+  },
+  footer: {
+    padding: '16px 12px',
+    borderTop: '1px solid var(--border)',
+  },
+  mockToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+    width: '100%',
+    padding: '7px 10px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--border)',
+    fontSize: '12px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    marginBottom: '10px',
+    transition: 'all 0.15s',
+    background: 'transparent',
+  },
+  apiStatus: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  dot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    background: 'var(--green)',
+    display: 'inline-block',
+  },
+};
+
+// AnimeCard — carte anime dans le catalogue
+function AnimeCard({ anime, onSelect, onDelete }) {
+  const [hovered, setHovered] = React.useState(false);
+
+  const statusColor = {
+    'en cours':  'var(--green)',
+    'terminé':   'var(--accent)',
+    'à venir':   'var(--yellow)',
+  }[anime.status] || 'var(--text-lo)';
+
+  return (
+    <div
+      style={{ ...animeCardStyles.card, ...(hovered ? animeCardStyles.cardHovered : {}) }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Cover placeholder */}
+      <div style={animeCardStyles.cover} onClick={() => onSelect(anime)}>
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id={`stripe-${anime.id}`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="5" height="10" fill="oklch(20% 0.02 260)" />
+              <rect x="5" width="5" height="10" fill="oklch(17% 0.015 260)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#stripe-${anime.id})`} />
+          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(40% 0.01 260)" fontSize="11" fontFamily="monospace">cover art</text>
+        </svg>
+        <div style={animeCardStyles.coverOverlay}>
+          <span style={animeCardStyles.detailBtn}>Voir détails →</span>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div style={animeCardStyles.info}>
+        <div style={animeCardStyles.titleRow}>
+          <h3 style={animeCardStyles.title} onClick={() => onSelect(anime)}>{anime.name}</h3>
+          <button style={animeCardStyles.deleteBtn} onClick={(e) => { e.stopPropagation(); onDelete(anime.id); }} title="Supprimer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+        <span style={{ ...animeCardStyles.status, color: statusColor }}>
+          <span style={{ ...animeCardStyles.statusDot, background: statusColor }}></span>
+          {anime.status}
+        </span>
+        {anime.synopsis && (
+          <p style={animeCardStyles.synopsis}>{anime.synopsis.slice(0, 80)}{anime.synopsis.length > 80 ? '…' : ''}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const animeCardStyles = {
+  card: {
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
+    cursor: 'default',
+  },
+  cardHovered: {
+    borderColor: 'var(--accent-dim)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 32px oklch(0% 0 0 / 0.4)',
+  },
+  cover: {
+    width: '100%',
+    height: '160px',
+    position: 'relative',
+    overflow: 'hidden',
+    cursor: 'pointer',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'oklch(0% 0 0 / 0)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background 0.2s',
+  },
+  detailBtn: {
+    color: 'var(--accent)',
+    fontSize: '13px',
+    fontWeight: '600',
+    opacity: 0,
+  },
+  info: {
+    padding: '12px 14px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  title: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '600',
+    fontSize: '14px',
+    color: 'var(--text-hi)',
+    lineHeight: 1.3,
+    cursor: 'pointer',
+    flex: 1,
+  },
+  deleteBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-lo)',
+    padding: '2px',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 0.15s',
+    flexShrink: 0,
+  },
+  status: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '12px',
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  statusDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  synopsis: {
+    fontSize: '12px',
+    color: 'var(--text-lo)',
+    lineHeight: 1.5,
+    textWrap: 'pretty',
+  },
+};
+
+// AnimeList — catalogue avec recherche, filtres et grille
+
+function AnimeList({ onSelect, onAdd, refreshKey }) {
+  const [animes, setAnimes]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [search, setSearch]     = useState('');
+  const [filter, setFilter]     = useState('tous');
+  const [deleting, setDeleting] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGetAnimes();
+      setAnimes(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Supprimer cet anime ?')) return;
+    setDeleting(id);
+    try {
+      await apiDeleteAnime(id);
+      setAnimes(prev => prev.filter(a => a.id !== id));
+    } catch (e) {
+      alert('Erreur : ' + e.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const filtered = animes.filter(a => {
+    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === 'tous' || a.status === filter;
+    return matchSearch && matchFilter;
+  });
+
+  const STATUS_FILTERS = ['tous', 'en cours', 'terminé', 'à venir'];
+
+  return (
+    <div style={alStyles.container}>
+      {/* Header */}
+      <div style={alStyles.header}>
+        <div>
+          <h1 style={alStyles.title}>Catalogue</h1>
+          <p style={alStyles.subtitle}>{animes.length} anime{animes.length !== 1 ? 's' : ''} enregistré{animes.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button style={alStyles.addBtn} onClick={onAdd}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ajouter un anime
+        </button>
+      </div>
+
+      {/* Search + Filters */}
+      <div style={alStyles.toolbar}>
+        <div style={alStyles.searchWrap}>
+          <svg style={alStyles.searchIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            style={alStyles.searchInput}
+            type="text"
+            placeholder="Rechercher un anime..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button style={alStyles.clearBtn} onClick={() => setSearch('')}>×</button>
+          )}
+        </div>
+        <div style={alStyles.filters}>
+          {STATUS_FILTERS.map(f => (
+            <button
+              key={f}
+              style={{ ...alStyles.filterBtn, ...(filter === f ? alStyles.filterBtnActive : {}) }}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading && (
+        <div style={alStyles.center}>
+          <div style={alStyles.spinner}></div>
+          <p style={{ color: 'var(--text-lo)', marginTop: '12px' }}>Chargement…</p>
+        </div>
+      )}
+      {error && (
+        <div style={alStyles.errorBox}>
+          <strong>Impossible de contacter l'API</strong>
+          <p style={{ fontSize: '12px', marginTop: '4px', color: 'var(--text-lo)' }}>{error}</p>
+          <button style={alStyles.retryBtn} onClick={load}>Réessayer</button>
+        </div>
+      )}
+      {!loading && !error && filtered.length === 0 && (
+        <div style={alStyles.center}>
+          <p style={{ color: 'var(--text-lo)' }}>{search ? 'Aucun résultat pour « ' + search + ' »' : 'Aucun anime pour l\'instant.'}</p>
+        </div>
+      )}
+      {!loading && !error && filtered.length > 0 && (
+        <div style={alStyles.grid}>
+          {filtered.map(anime => (
+            <AnimeCard
+              key={anime.id}
+              anime={anime}
+              onSelect={onSelect}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const alStyles = {
+  container: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: '28px 32px 0',
+    flexShrink: 0,
+  },
+  title: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '26px',
+    letterSpacing: '-0.5px',
+    color: 'var(--text-hi)',
+  },
+  subtitle: {
+    color: 'var(--text-lo)',
+    fontSize: '13px',
+    marginTop: '2px',
+  },
+  addBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'var(--accent)',
+    border: 'none',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: '14px',
+    padding: '9px 18px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+  },
+  toolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px 32px',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+  },
+  searchWrap: {
+    position: 'relative',
+    flex: '1',
+    minWidth: '200px',
+    maxWidth: '360px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-lo)',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    paddingLeft: '34px',
+    paddingRight: '30px',
+    width: '100%',
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: '8px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-lo)',
+    fontSize: '18px',
+    lineHeight: 1,
+    cursor: 'pointer',
+    padding: '2px',
+  },
+  filters: {
+    display: 'flex',
+    gap: '4px',
+  },
+  filterBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-lo)',
+    fontSize: '13px',
+    fontWeight: '500',
+    padding: '6px 14px',
+    borderRadius: '100px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    textTransform: 'capitalize',
+  },
+  filterBtnActive: {
+    background: 'var(--accent)',
+    borderColor: 'var(--accent)',
+    color: '#fff',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '16px',
+    padding: '4px 32px 32px',
+    overflowY: 'auto',
+    flex: 1,
+  },
+  center: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px',
+  },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid var(--border)',
+    borderTopColor: 'var(--accent)',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  errorBox: {
+    margin: '32px',
+    padding: '20px 24px',
+    background: 'oklch(30% 0.08 20 / 0.2)',
+    border: '1px solid oklch(50% 0.1 20 / 0.4)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--red)',
+  },
+  retryBtn: {
+    marginTop: '12px',
+    background: 'transparent',
+    border: '1px solid var(--red)',
+    color: 'var(--red)',
+    padding: '6px 16px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '13px',
+    cursor: 'pointer',
+  },
+};
+
+// AnimeDetail — page détail d'un anime avec édition inline
+
+function AnimeDetail({ animeId, onBack, onEdit }) {
+  const [anime, setAnime]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    if (!animeId) return;
+    setLoading(true);
+    setError(null);
+    apiGetAnime(animeId)
+      .then(data => { setAnime(data); setLoading(false); })
+      .catch(e => { setError(e.message); setLoading(false); });
+  }, [animeId]);
+
+  const statusMeta = {
+    'en cours':  { color: 'var(--green)',  label: 'En cours' },
+    'terminé':   { color: 'var(--accent)', label: 'Terminé' },
+    'à venir':   { color: 'var(--yellow)', label: 'À venir' },
+  };
+  const meta = anime ? (statusMeta[anime.status] || { color: 'var(--text-lo)', label: anime.status }) : null;
+
+  return (
+    <div style={adStyles.container}>
+      {/* Back */}
+      <button style={adStyles.backBtn} onClick={onBack}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour au catalogue
+      </button>
+
+      {loading && (
+        <div style={adStyles.center}>
+          <div style={adStyles.spinner}></div>
+        </div>
+      )}
+      {error && (
+        <div style={adStyles.errorBox}><strong>Erreur :</strong> {error}</div>
+      )}
+      {anime && !loading && (
+        <div style={adStyles.content}>
+          {/* Cover + info */}
+          <div style={adStyles.hero}>
+            <div style={adStyles.coverLarge}>
+              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="stripe-detail" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="7" height="14" fill="oklch(20% 0.02 260)" />
+                    <rect x="7" width="7" height="14" fill="oklch(17% 0.015 260)" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#stripe-detail)" />
+                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(35% 0.01 260)" fontSize="13" fontFamily="monospace">cover art</text>
+              </svg>
+            </div>
+            <div style={adStyles.heroInfo}>
+              <div style={adStyles.idBadge}>#{anime.id}</div>
+              <h1 style={adStyles.animeTitle}>{anime.name}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                <span style={{ ...adStyles.statusBadge, background: meta.color + '22', color: meta.color, border: `1px solid ${meta.color}44` }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: meta.color, display: 'inline-block', marginRight: '6px' }}></span>
+                  {meta.label}
+                </span>
+              </div>
+              <div style={adStyles.synopsis}>
+                <h3 style={adStyles.sectionLabel}>Synopsis</h3>
+                <p style={adStyles.synopsisText}>
+                  {anime.synopsis || <span style={{ color: 'var(--text-lo)', fontStyle: 'italic' }}>Aucun synopsis disponible.</span>}
+                </p>
+              </div>
+              <div style={adStyles.actions}>
+                <button style={adStyles.editBtn} onClick={() => onEdit(anime)}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Modifier
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const adStyles = {
+  container: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '28px 32px',
+    overflowY: 'auto',
+  },
+  backBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-lo)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    padding: '0',
+    marginBottom: '24px',
+    transition: 'color 0.15s',
+  },
+  center: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '80px',
+  },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid var(--border)',
+    borderTopColor: 'var(--accent)',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  errorBox: {
+    padding: '20px 24px',
+    background: 'oklch(30% 0.08 20 / 0.2)',
+    border: '1px solid oklch(50% 0.1 20 / 0.4)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--red)',
+  },
+  content: {
+    maxWidth: '860px',
+  },
+  hero: {
+    display: 'flex',
+    gap: '32px',
+    alignItems: 'flex-start',
+  },
+  coverLarge: {
+    width: '200px',
+    height: '280px',
+    borderRadius: 'var(--radius-md)',
+    overflow: 'hidden',
+    flexShrink: 0,
+    border: '1px solid var(--border)',
+  },
+  heroInfo: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  idBadge: {
+    fontSize: '12px',
+    color: 'var(--text-lo)',
+    fontFamily: 'monospace',
+    marginBottom: '6px',
+  },
+  animeTitle: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '28px',
+    letterSpacing: '-0.5px',
+    color: 'var(--text-hi)',
+    lineHeight: 1.2,
+    textWrap: 'pretty',
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 12px',
+    borderRadius: '100px',
+    fontSize: '13px',
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  synopsis: {
+    marginTop: '24px',
+  },
+  sectionLabel: {
+    fontSize: '11px',
+    fontWeight: '600',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'var(--text-lo)',
+    marginBottom: '8px',
+  },
+  synopsisText: {
+    color: 'var(--text-mid)',
+    lineHeight: 1.7,
+    fontSize: '14px',
+    textWrap: 'pretty',
+    maxWidth: '560px',
+  },
+  actions: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '28px',
+  },
+  editBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'var(--accent)',
+    border: 'none',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: '14px',
+    padding: '9px 20px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+  },
+};
+
+// AnimeForm — modal pour ajouter ou modifier un anime
+
+function AnimeForm({ anime, onClose, onSaved }) {
+  const isEdit = Boolean(anime);
+  const [form, setForm] = useState({
+    name:     anime?.name     || '',
+    synopsis: anime?.synopsis || '',
+    status:   anime?.status   || 'en cours',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) { setError('Le nom est obligatoire.'); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      if (isEdit) {
+        await apiUpdateAnime(anime.id, form);
+      } else {
+        await apiAddAnime(form);
+      }
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Close on backdrop click
+  const onBackdrop = (e) => { if (e.target === e.currentTarget) onClose(); };
+
+  return (
+    <div style={afStyles.backdrop} onClick={onBackdrop}>
+      <div style={afStyles.modal}>
+        <div style={afStyles.modalHeader}>
+          <h2 style={afStyles.modalTitle}>{isEdit ? 'Modifier l\'anime' : 'Ajouter un anime'}</h2>
+          <button style={afStyles.closeBtn} onClick={onClose}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <form style={afStyles.form} onSubmit={handleSubmit}>
+          <div style={afStyles.field}>
+            <label style={afStyles.label}>Nom <span style={{ color: 'var(--accent)' }}>*</span></label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={e => set('name', e.target.value)}
+              placeholder="Ex: Fullmetal Alchemist"
+              autoFocus
+            />
+          </div>
+
+          <div style={afStyles.field}>
+            <label style={afStyles.label}>Synopsis</label>
+            <textarea
+              value={form.synopsis}
+              onChange={e => set('synopsis', e.target.value)}
+              placeholder="Description de l'anime..."
+              rows={4}
+              style={{ resize: 'vertical' }}
+            />
+          </div>
+
+          <div style={afStyles.field}>
+            <label style={afStyles.label}>Statut</label>
+            <div style={afStyles.statusGroup}>
+              {['en cours', 'terminé', 'à venir'].map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => set('status', s)}
+                  style={{
+                    ...afStyles.statusOption,
+                    ...(form.status === s ? afStyles.statusOptionActive : {}),
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && <div style={afStyles.errorMsg}>{error}</div>}
+
+          <div style={afStyles.footer}>
+            <button type="button" style={afStyles.cancelBtn} onClick={onClose}>Annuler</button>
+            <button type="submit" style={afStyles.submitBtn} disabled={loading}>
+              {loading ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const afStyles = {
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    background: 'oklch(0% 0 0 / 0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    backdropFilter: 'blur(4px)',
+  },
+  modal: {
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)',
+    width: '100%',
+    maxWidth: '480px',
+    boxShadow: '0 32px 80px oklch(0% 0 0 / 0.6)',
+  },
+  modalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '20px 24px',
+    borderBottom: '1px solid var(--border)',
+  },
+  modalTitle: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '18px',
+    color: 'var(--text-hi)',
+  },
+  closeBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-lo)',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '18px',
+    padding: '24px',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: 'var(--text-mid)',
+  },
+  statusGroup: {
+    display: 'flex',
+    gap: '8px',
+  },
+  statusOption: {
+    flex: 1,
+    padding: '8px 0',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-lo)',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    textTransform: 'capitalize',
+    transition: 'all 0.15s',
+  },
+  statusOptionActive: {
+    background: 'var(--accent-glow)',
+    borderColor: 'var(--accent)',
+    color: 'var(--text-hi)',
+  },
+  errorMsg: {
+    background: 'oklch(30% 0.08 20 / 0.2)',
+    border: '1px solid oklch(50% 0.1 20 / 0.4)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '10px 14px',
+    color: 'var(--red)',
+    fontSize: '13px',
+  },
+  footer: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    paddingTop: '4px',
+  },
+  cancelBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-mid)',
+    padding: '9px 20px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+  },
+  submitBtn: {
+    background: 'var(--accent)',
+    border: 'none',
+    color: '#fff',
+    padding: '9px 24px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    opacity: 1,
+    transition: 'opacity 0.15s',
+  },
+};
+
+// UserList — gestion des utilisateurs
+
+function UserList() {
+  const [users, setUsers]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [newPseudo, setNewPseudo] = useState('');
+  const [adding, setAdding]     = useState(false);
+  const [addError, setAddError] = useState(null);
+  const [search, setSearch]     = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGetUsers();
+      setUsers(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!newPseudo.trim()) { setAddError('Le pseudo est obligatoire.'); return; }
+    setAdding(true);
+    setAddError(null);
+    try {
+      await apiAddUser({ pseudo: newPseudo.trim() });
+      setNewPseudo('');
+      await load();
+    } catch (err) {
+      setAddError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async (id, pseudo) => {
+    if (!window.confirm(`Supprimer l'utilisateur "${pseudo}" ?`)) return;
+    try {
+      await apiDeleteUser(id);
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (e) {
+      alert('Erreur : ' + e.message);
+    }
+  };
+
+  const filtered = users.filter(u =>
+    u.pseudo.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const avatarColor = (pseudo) => {
+    const hues = [320, 200, 145, 260, 30, 85];
+    let hash = 0;
+    for (let i = 0; i < pseudo.length; i++) hash = pseudo.charCodeAt(i) + ((hash << 5) - hash);
+    return `oklch(60% 0.18 ${hues[Math.abs(hash) % hues.length]})`;
+  };
+
+  return (
+    <div style={ulStyles.container}>
+      <div style={ulStyles.header}>
+        <div>
+          <h1 style={ulStyles.title}>Utilisateurs</h1>
+          <p style={ulStyles.subtitle}>{users.length} utilisateur{users.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Add form */}
+      <div style={ulStyles.addBox}>
+        <h3 style={ulStyles.addTitle}>Ajouter un utilisateur</h3>
+        <form style={ulStyles.addForm} onSubmit={handleAdd}>
+          <input
+            type="text"
+            placeholder="Pseudo..."
+            value={newPseudo}
+            onChange={e => { setNewPseudo(e.target.value); setAddError(null); }}
+            style={{ flex: 1 }}
+          />
+          <button type="submit" style={ulStyles.addBtn} disabled={adding}>
+            {adding ? '…' : 'Ajouter'}
+          </button>
+        </form>
+        {addError && <p style={ulStyles.addError}>{addError}</p>}
+      </div>
+
+      {/* Search */}
+      <div style={ulStyles.searchWrap}>
+        <svg style={ulStyles.searchIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input
+          type="text"
+          placeholder="Rechercher un utilisateur..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ paddingLeft: '34px' }}
+        />
+      </div>
+
+      {/* Content */}
+      {loading && <div style={ulStyles.center}><div style={ulStyles.spinner}></div></div>}
+      {error && <div style={ulStyles.errorBox}><strong>Erreur :</strong> {error}<button style={ulStyles.retryBtn} onClick={load}>Réessayer</button></div>}
+
+      {!loading && !error && (
+        <div style={ulStyles.list}>
+          {filtered.length === 0 && (
+            <div style={ulStyles.empty}>Aucun utilisateur trouvé.</div>
+          )}
+          {filtered.map(user => (
+            <div key={user.id} style={ulStyles.row}>
+              <div style={{ ...ulStyles.avatar, background: avatarColor(user.pseudo) }}>
+                {user.pseudo[0].toUpperCase()}
+              </div>
+              <div style={ulStyles.userInfo}>
+                <span style={ulStyles.pseudo}>{user.pseudo}</span>
+                <span style={ulStyles.userId}>#{user.id}</span>
+              </div>
+              <button
+                style={ulStyles.deleteBtn}
+                onClick={() => handleDelete(user.id, user.pseudo)}
+                title="Supprimer"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ulStyles = {
+  container: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  header: {
+    padding: '28px 32px 0',
+    flexShrink: 0,
+  },
+  title: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '26px',
+    letterSpacing: '-0.5px',
+    color: 'var(--text-hi)',
+  },
+  subtitle: {
+    color: 'var(--text-lo)',
+    fontSize: '13px',
+    marginTop: '2px',
+  },
+  addBox: {
+    margin: '20px 32px 0',
+    padding: '18px 20px',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    flexShrink: 0,
+  },
+  addTitle: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'var(--text-mid)',
+    marginBottom: '10px',
+  },
+  addForm: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  addBtn: {
+    background: 'var(--accent)',
+    border: 'none',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: '14px',
+    padding: '8px 20px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  addError: {
+    color: 'var(--red)',
+    fontSize: '12px',
+    marginTop: '8px',
+  },
+  searchWrap: {
+    position: 'relative',
+    margin: '14px 32px 0',
+    flexShrink: 0,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-lo)',
+    pointerEvents: 'none',
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    padding: '14px 32px 32px',
+    overflowY: 'auto',
+    flex: 1,
+  },
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-sm)',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    transition: 'border-color 0.15s',
+  },
+  avatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '15px',
+    color: '#fff',
+    flexShrink: 0,
+  },
+  userInfo: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  pseudo: {
+    fontWeight: '500',
+    fontSize: '14px',
+    color: 'var(--text-hi)',
+  },
+  userId: {
+    fontSize: '12px',
+    color: 'var(--text-lo)',
+    fontFamily: 'monospace',
+  },
+  deleteBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-lo)',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color 0.15s',
+  },
+  center: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px',
+  },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid var(--border)',
+    borderTopColor: 'var(--accent)',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  errorBox: {
+    margin: '20px 32px',
+    padding: '16px 20px',
+    background: 'oklch(30% 0.08 20 / 0.2)',
+    border: '1px solid oklch(50% 0.1 20 / 0.4)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--red)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  retryBtn: {
+    marginLeft: 'auto',
+    background: 'transparent',
+    border: '1px solid var(--red)',
+    color: 'var(--red)',
+    padding: '4px 12px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+  empty: {
+    textAlign: 'center',
+    color: 'var(--text-lo)',
+    padding: '40px',
+  },
+};
+
+// GenreManager — gestion des genres
+
+function GenreManager() {
+  const [genres, setGenres]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [newGenre, setNewGenre] = useState('');
+  const [adding, setAdding]     = useState(false);
+  const [addError, setAddError] = useState(null);
+  const [added, setAdded]       = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGetGenres();
+      setGenres(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!newGenre.trim()) { setAddError('Le nom du genre est obligatoire.'); return; }
+    setAdding(true);
+    setAddError(null);
+    try {
+      await apiAddGenre({ name: newGenre.trim() });
+      setAdded(newGenre.trim());
+      setNewGenre('');
+      await load();
+      setTimeout(() => setAdded(null), 2500);
+    } catch (err) {
+      setAddError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const tagColor = (name) => {
+    const hues = [320, 200, 145, 260, 30, 85, 180, 350];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = hues[Math.abs(hash) % hues.length];
+    return {
+      bg:     `oklch(55% 0.14 ${hue} / 0.15)`,
+      border: `oklch(55% 0.14 ${hue} / 0.35)`,
+      text:   `oklch(75% 0.14 ${hue})`,
+    };
+  };
+
+  return (
+    <div style={gmStyles.container}>
+      <div style={gmStyles.header}>
+        <div>
+          <h1 style={gmStyles.title}>Genres</h1>
+          <p style={gmStyles.subtitle}>{genres.length} genre{genres.length !== 1 ? 's' : ''} enregistré{genres.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Add form */}
+      <div style={gmStyles.addBox}>
+        <h3 style={gmStyles.addTitle}>Ajouter un genre</h3>
+        <form style={gmStyles.addForm} onSubmit={handleAdd}>
+          <input
+            type="text"
+            placeholder="Ex: Shōnen, Isekai, Slice of life..."
+            value={newGenre}
+            onChange={e => { setNewGenre(e.target.value); setAddError(null); }}
+            style={{ flex: 1 }}
+          />
+          <button type="submit" style={gmStyles.addBtn} disabled={adding}>
+            {adding ? '…' : 'Ajouter'}
+          </button>
+        </form>
+        {addError && <p style={gmStyles.addError}>{addError}</p>}
+        {added && <p style={gmStyles.addSuccess}>✓ Genre « {added} » ajouté !</p>}
+      </div>
+
+      {/* Content */}
+      {loading && <div style={gmStyles.center}><div style={gmStyles.spinner}></div></div>}
+      {error && (
+        <div style={gmStyles.errorBox}>
+          <strong>Erreur :</strong> {error}
+          <button style={gmStyles.retryBtn} onClick={load}>Réessayer</button>
+        </div>
+      )}
+      {!loading && !error && (
+        <div style={gmStyles.content}>
+          {genres.length === 0 ? (
+            <div style={gmStyles.empty}>Aucun genre enregistré pour l'instant.</div>
+          ) : (
+            <div style={gmStyles.tagsGrid}>
+              {genres.map(g => {
+                const c = tagColor(g.name);
+                return (
+                  <div
+                    key={g.name}
+                    style={{
+                      ...gmStyles.tag,
+                      background: c.bg,
+                      border: `1px solid ${c.border}`,
+                      color: c.text,
+                    }}
+                  >
+                    {g.name}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const gmStyles = {
+  container: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  header: {
+    padding: '28px 32px 0',
+    flexShrink: 0,
+  },
+  title: {
+    fontFamily: 'var(--font-head)',
+    fontWeight: '700',
+    fontSize: '26px',
+    letterSpacing: '-0.5px',
+    color: 'var(--text-hi)',
+  },
+  subtitle: {
+    color: 'var(--text-lo)',
+    fontSize: '13px',
+    marginTop: '2px',
+  },
+  addBox: {
+    margin: '20px 32px 0',
+    padding: '18px 20px',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    flexShrink: 0,
+  },
+  addTitle: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'var(--text-mid)',
+    marginBottom: '10px',
+  },
+  addForm: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  addBtn: {
+    background: 'var(--accent)',
+    border: 'none',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: '14px',
+    padding: '8px 20px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  addError: {
+    color: 'var(--red)',
+    fontSize: '12px',
+    marginTop: '8px',
+  },
+  addSuccess: {
+    color: 'var(--green)',
+    fontSize: '12px',
+    marginTop: '8px',
+  },
+  content: {
+    padding: '20px 32px 32px',
+    overflowY: 'auto',
+    flex: 1,
+  },
+  tagsGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px',
+  },
+  tag: {
+    padding: '7px 16px',
+    borderRadius: '100px',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
+  empty: {
+    color: 'var(--text-lo)',
+    padding: '40px 0',
+    textAlign: 'center',
+  },
+  center: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px',
+  },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid var(--border)',
+    borderTopColor: 'var(--accent)',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  errorBox: {
+    margin: '20px 32px',
+    padding: '16px 20px',
+    background: 'oklch(30% 0.08 20 / 0.2)',
+    border: '1px solid oklch(50% 0.1 20 / 0.4)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--red)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  retryBtn: {
+    marginLeft: 'auto',
+    background: 'transparent',
+    border: '1px solid var(--red)',
+    color: 'var(--red)',
+    padding: '4px 12px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+};
+
+// App — composant racine, gestion de la navigation et des modals
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "oklch(65% 0.22 320)",
+  "darkBg": true,
+  "fontHead": "Space Grotesk",
+  "cardMinWidth": 200
+}/*EDITMODE-END*/;
+
+function App() {
+  const [page, setPage]                   = useState('animes');
+  const [selectedAnime, setSelectedAnime] = useState(null);
+  const [editAnime, setEditAnime]         = useState(null);
+  const [refreshKey, setRefreshKey]       = useState(0);
+  const [mockMode, setMockModeState]      = useState(false);
+
+  const [tweaks, setTweaksState] = useTweaks(TWEAK_DEFAULTS);
+
+  const refresh = () => setRefreshKey(k => k + 1);
+
+  const handleToggleMock = useCallback(() => {
+    setMockModeState(prev => {
+      const next = !prev;
+      setMockMode(next);
+      setPage('animes');
+      setSelectedAnime(null);
+      setRefreshKey(k => k + 1);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAnime = useCallback((anime) => {
+    setSelectedAnime(anime);
+    setPage('anime-detail');
+  }, []);
+
+  const handleAddAnime  = useCallback(() => setEditAnime({}), []);
+  const handleEditAnime = useCallback((anime) => setEditAnime(anime), []);
+
+  const handleFormSaved = useCallback(() => {
+    setEditAnime(null);
+    if (page === 'anime-detail') {
+      setSelectedAnime(prev => ({ ...prev }));
+    }
+    refresh();
+    setPage('animes');
+  }, [page]);
+
+  const accentStyle = {
+    '--accent':      tweaks.accentColor,
+    '--accent-dim':  tweaks.accentColor,
+    '--accent-glow': tweaks.accentColor + '40',
+    '--bg-deep':     tweaks.darkBg ? 'oklch(10% 0.01 260)' : 'oklch(96% 0.005 260)',
+    '--bg-surface':  tweaks.darkBg ? 'oklch(14% 0.012 260)' : 'oklch(92% 0.006 260)',
+    '--bg-card':     tweaks.darkBg ? 'oklch(17% 0.015 260)' : 'oklch(98% 0.004 260)',
+    '--border':      tweaks.darkBg ? 'oklch(25% 0.02 260)'  : 'oklch(85% 0.01 260)',
+    '--text-hi':     tweaks.darkBg ? 'oklch(96% 0.005 260)' : 'oklch(14% 0.01 260)',
+    '--text-mid':    tweaks.darkBg ? 'oklch(70% 0.01 260)'  : 'oklch(35% 0.01 260)',
+    '--text-lo':     tweaks.darkBg ? 'oklch(45% 0.01 260)'  : 'oklch(55% 0.01 260)',
+  };
+
+  return (
+    <div style={{ ...appStyles.shell, ...accentStyle }}>
+      <Sidebar
+        currentPage={page === 'anime-detail' ? 'animes' : page}
+        onNavigate={(p) => { setPage(p); setSelectedAnime(null); }}
+        mockMode={mockMode}
+        onToggleMock={handleToggleMock}
+      />
+
+      <main style={appStyles.main}>
+        {page === 'animes' && (
+          <AnimeList
+            onSelect={handleSelectAnime}
+            onAdd={handleAddAnime}
+            refreshKey={refreshKey}
+          />
+        )}
+        {page === 'anime-detail' && selectedAnime && (
+          <AnimeDetail
+            animeId={selectedAnime.id}
+            onBack={() => setPage('animes')}
+            onEdit={handleEditAnime}
+          />
+        )}
+        {page === 'users'  && <UserList    key={refreshKey} />}
+        {page === 'genres' && <GenreManager key={refreshKey} />}
+      </main>
+
+      {editAnime !== null && (
+        <AnimeForm
+          anime={editAnime && editAnime.id ? editAnime : null}
+          onClose={() => setEditAnime(null)}
+          onSaved={handleFormSaved}
+        />
+      )}
+
+      <TweaksPanel tweaks={tweaks} setTweak={setTweaksState}>
+        <TweakSection title="Apparence">
+          <TweakColor
+            label="Couleur accentuation"
+            value={tweaks.accentColor}
+            onChange={v => setTweaksState('accentColor', v)}
+          />
+          <TweakToggle
+            label="Mode sombre"
+            value={tweaks.darkBg}
+            onChange={v => setTweaksState('darkBg', v)}
+          />
+          <TweakSelect
+            label="Police titres"
+            value={tweaks.fontHead}
+            options={['Space Grotesk', 'DM Sans', 'Outfit', 'Sora']}
+            onChange={v => {
+              setTweaksState('fontHead', v);
+              document.documentElement.style.setProperty('--font-head', `'${v}', sans-serif`);
+            }}
+          />
+        </TweakSection>
+        <TweakSection title="Grille anime">
+          <TweakSlider
+            label="Largeur min. carte"
+            value={tweaks.cardMinWidth}
+            min={140} max={300} step={10}
+            onChange={v => setTweaksState('cardMinWidth', v)}
+          />
+        </TweakSection>
+      </TweaksPanel>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        body { font-family: var(--font-body); }
+        h1, h2, h3 { font-family: var(--font-head, 'Space Grotesk', sans-serif); }
+      `}</style>
+    </div>
+  );
+}
+
+const appStyles = {
+  shell: {
+    display: 'flex',
+    height: '100vh',
+    width: '100vw',
+    overflow: 'hidden',
+    background: 'var(--bg-deep)',
+    color: 'var(--text-hi)',
+    transition: 'background 0.2s, color 0.2s',
+  },
+  main: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    minWidth: 0,
+  },
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+  </script>
+</body>
+</html>
