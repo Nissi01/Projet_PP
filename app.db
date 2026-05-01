@@ -47,11 +47,14 @@ INSERT INTO genres (name) VALUES
 ('Romance');
 
 INSERT INTO animes (name, synopsis, status, cover_url) VALUES 
-('Eighty-Six', 'L''histoire dans un monde en guerre Vladilena Milize est attribuee a un escadron', 'termine', NULL),
-('Wandering Witch: The Journey of Elaina', 'L''histoire du voyage d''une sorciere au nom d''Elaina', 'termine', NULL),
-('One Piece', 'Une histoire de pirates qui s''etire en longueur...', 'en cours', NULL),
-('Gintama', 'C''est quoi ?', 'annule', NULL);
+('Eighty-Six', 'L''histoire dans un monde en guerre Vladilena Milize est attribuee a un escadron', 'termine', 'https://cdn.myanimelist.net/images/anime/1324/110843.jpg'),
+('Wandering Witch: The Journey of Elaina', 'L''histoire du voyage d''une sorciere au nom d''Elaina', 'termine', 'https://cdn.myanimelist.net/images/anime/1802/108501.jpg'),
+('One Piece', 'Une histoire de pirates qui s''etire en longueur...', 'en cours', 'https://cdn.myanimelist.net/images/anime/1081/137690.jpg'),
+('Gintama', 'C''est quoi ?', 'annule', 'https://cdn.myanimelist.net/images/anime/10/32023l.jpg');
 
 INSERT INTO anime_genres (anime_id, genre_name) VALUES 
 (1, 'Seinen'),
 (3, 'Shonen');
+
+INSERT INTO user_animes (user_id, anime_id, statut, note) VALUES
+(1, 4, 'abandonner', 1);
