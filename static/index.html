@@ -55,7 +55,7 @@
       { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours', genres: ['Action', 'Shōnen'] },
       { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours', genres: ['Action', 'Shōnen'] },
       { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'termine', genres: ['Seinen'] },
-      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir', genres: ['Slice of Life', 'Seinen'] },
+      { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'a venir', genres: ['Slice of Life', 'Seinen'] },
     ];
     var _mockUsers = [
       { id: 1, pseudo: 'otaku42' },
@@ -773,7 +773,7 @@ function AnimeCard({ anime, onSelect, onDelete }) {
   const statusColor = {
     'en cours':  'var(--green)',
     'termine':   'var(--accent)',
-    'à venir':   'var(--yellow)',
+    'a venir':   'var(--yellow)',
   }[anime.status] || 'var(--text-lo)';
 
   return (
@@ -999,7 +999,7 @@ function AnimeList({ onSelect, onAdd, refreshKey }) {
     return matchSearch && matchFilter;
   });
 
-  const STATUS_FILTERS = ['tous', 'en cours', 'termine', 'à venir'];
+  const STATUS_FILTERS = ['tous', 'en cours', 'termine', 'a venir'];
 
   return (
     <div style={alStyles.container}>
@@ -1271,7 +1271,7 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
   const statusMeta = {
     'en cours':  { color: 'var(--green)',  label: 'En cours' },
     'termine':   { color: 'var(--accent)', label: 'Terminé' },
-    'à venir':   { color: 'var(--yellow)', label: 'À venir' },
+    'a venir':   { color: 'var(--yellow)', label: 'A venir' },
   };
   const meta = anime ? (statusMeta[anime.status] || { color: 'var(--text-lo)', label: anime.status }) : null;
 
@@ -1670,7 +1670,7 @@ function AnimeForm({ anime, onClose, onSaved }) {
           <div style={afStyles.field}>
             <label style={afStyles.label}>Statut</label>
             <div style={afStyles.statusGroup}>
-              {['en cours', 'termine', 'à venir'].map(s => (
+              {['en cours', 'termine', 'a venir'].map(s => (
                 <button
                   key={s}
                   type="button"
