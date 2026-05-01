@@ -2,9 +2,17 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 import time
 from flask_cors import CORS
+import os
+from werkzeug.utils import secure_filename
+import time
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
+
+# Configuration pour l'upload
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'covers')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:root@db/myanimelist'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -121,6 +129,21 @@ def delete_anime(id):
     db.session.commit()
     return jsonify({"message": f"'{a.name}' supprimé"}), 200
 
+@app.route('/upload', methods=['POST'])
+def upload_cover():
+    if 'cover' not in request.files:
+        return jsonify({"error": "Aucun fichier envoyé"}), 400
+    
+    file = request.files['cover']
+    if file.filename == '':
+        return jsonify({"error": "Aucun fichier sélectionné"}), 400
+        
+    if file:
+        # Timestamp pour eviter les doublons
+        filename = f"{int(time.time())}_{secure_filename(file.filename)}"
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        return jsonify({"cover": filename}), 200
 
 # ─── API User ─────────────────────────────────────────────────────────────────
 @app.route('/users', methods=['GET'])

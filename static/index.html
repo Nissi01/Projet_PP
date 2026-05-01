@@ -50,11 +50,11 @@
   <script>
     var MOCK_MODE = false;
     var _mockAnimes = [
-      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'terminé', genres: ['Action', 'Seinen'] },
-      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'terminé', genres: ['Action', 'Shōnen'] },
+      { id: 1, name: 'Fullmetal Alchemist: Brotherhood', synopsis: 'Deux frères alchimistes cherchent la Pierre Philosophale après une tentative de résurrection ratée.', status: 'termine', genres: ['Action', 'Seinen'] },
+      { id: 2, name: 'Attack on Titan', synopsis: "L'humanité survit derrière des murs géants pour se protéger des Titans.", status: 'termine', genres: ['Action', 'Shōnen'] },
       { id: 3, name: 'Demon Slayer', synopsis: 'Tanjiro devient chasseur de démons pour sauver sa sœur transformée.', status: 'en cours', genres: ['Action', 'Shōnen'] },
       { id: 4, name: 'Jujutsu Kaisen', synopsis: "Un lycéen ingère un doigt maudit et intègre une école d'exorcistes.", status: 'en cours', genres: ['Action', 'Shōnen'] },
-      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'terminé', genres: ['Seinen'] },
+      { id: 5, name: 'Vinland Saga', synopsis: 'Un jeune viking cherche à venger la mort de son père.', status: 'termine', genres: ['Seinen'] },
       { id: 6, name: 'Frieren', synopsis: 'Une elfe magicienne part en voyage après la mort de ses compagnons.', status: 'à venir', genres: ['Slice of Life', 'Seinen'] },
     ];
     var _mockUsers = [
@@ -136,6 +136,17 @@
     function apiDeleteUser(id)    { return MOCK_MODE ? mockDeleteUser(id)    : apiFetch('/users/' + id, { method: 'DELETE' }); }
     function apiGetGenres()       { return MOCK_MODE ? mockGetGenres()       : apiFetch('/genres'); }
     function apiAddGenre(data)    { return MOCK_MODE ? mockAddGenre(data)    : apiFetch('/genres', { method: 'POST', body: JSON.stringify(data) }); }
+    async function apiUploadCover(file) {
+      var formData = new FormData();
+      formData.append('cover', file);
+      
+      var res = await fetch(API_BASE + '/upload', {
+        method: 'POST',
+        body: formData // Note: on ne met pas 'Content-Type: application/json' ici !
+      });
+      if (!res.ok) { throw new Error('Erreur lors de l\'upload'); }
+      return res.json();
+    }
   </script>
 
   <script type="text/babel">
@@ -761,7 +772,7 @@ function AnimeCard({ anime, onSelect, onDelete }) {
 
   const statusColor = {
     'en cours':  'var(--green)',
-    'terminé':   'var(--accent)',
+    'termine':   'var(--accent)',
     'à venir':   'var(--yellow)',
   }[anime.status] || 'var(--text-lo)';
 
@@ -1259,7 +1270,7 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
 
   const statusMeta = {
     'en cours':  { color: 'var(--green)',  label: 'En cours' },
-    'terminé':   { color: 'var(--accent)', label: 'Terminé' },
+    'termine':   { color: 'var(--accent)', label: 'Terminé' },
     'à venir':   { color: 'var(--yellow)', label: 'À venir' },
   };
   const meta = anime ? (statusMeta[anime.status] || { color: 'var(--text-lo)', label: anime.status }) : null;
@@ -1551,11 +1562,12 @@ function AnimeForm({ anime, onClose, onSaved }) {
     synopsis: anime?.synopsis || '',
     status:   anime?.status   || 'en cours',
     genres:   anime?.genres   || [],
+    cover:    anime?.cover    || null,
   });
   const [allGenres, setAllGenres] = useState([]);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
-
+  const [coverFile, setCoverFile] = useState(null);
   useEffect(() => {
     apiGetGenres().then(data => setAllGenres(data.map(g => g.name))).catch(() => {});
   }, []);
@@ -1577,10 +1589,15 @@ function AnimeForm({ anime, onClose, onSaved }) {
     setLoading(true);
     setError(null);
     try {
+      let finalForm = { ...form };
+      if (coverFile && !MOCK_MODE) {
+        const uploadRes = await apiUploadCover(coverFile);
+        finalForm.cover = uploadRes.cover; // On attache le nom renvoyé par le serveur
+      }
       if (isEdit) {
-        await apiUpdateAnime(anime.id, form);
+        await apiUpdateAnime(anime.id, finalForm);
       } else {
-        await apiAddAnime(form);
+        await apiAddAnime(finalForm);
       }
       onSaved();
     } catch (err) {
@@ -1633,9 +1650,27 @@ function AnimeForm({ anime, onClose, onSaved }) {
           </div>
 
           <div style={afStyles.field}>
+            <label style={afStyles.label}>Image de couverture (Optionnel)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setCoverFile(e.target.files[0])}
+              style={{
+                padding: '4px',
+                background: 'transparent',
+                border: '1px dashed var(--border)',
+                cursor: 'pointer'
+              }}
+            />
+            {form.cover && !coverFile && (
+               <span style={{fontSize: '11px', color: 'var(--text-lo)'}}>Image actuelle : {form.cover}</span>
+            )}
+          </div>
+
+          <div style={afStyles.field}>
             <label style={afStyles.label}>Statut</label>
             <div style={afStyles.statusGroup}>
-              {['en cours', 'terminé', 'à venir'].map(s => (
+              {['en cours', 'termine', 'à venir'].map(s => (
                 <button
                   key={s}
                   type="button"
