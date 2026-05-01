@@ -4,16 +4,15 @@ CREATE TABLE users (
 );
 
 CREATE TABLE genres (
-    name VARCHAR(50) NOT NULL UNIQUE
+    name VARCHAR(50) PRIMARY KEY
 );
-
 
 CREATE TABLE animes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     synopsis TEXT,
-    status ENUM('en cours', 'termine', 'a venir', 'annule') DEFAULT 'en cours',
-    cover VARCHAR(255)
+    status VARCHAR(20) DEFAULT 'en cours',
+    cover_url VARCHAR(500)
 );
 
 CREATE TABLE anime_genres (
@@ -24,12 +23,11 @@ CREATE TABLE anime_genres (
     FOREIGN KEY (genre_name) REFERENCES genres(name) ON DELETE CASCADE
 );
 
-
-CREATE TABLE user_anime_list (
+CREATE TABLE user_animes (
     user_id INT,
     anime_id INT,
-    score INT CHECK (score >= 0 AND score <= 10),
-    user_status ENUM('a regarder', 'en cours', 'termine'),
+    statut VARCHAR(30) DEFAULT 'À voir',
+    note INT CHECK (note >= 1 AND note <= 10),
     PRIMARY KEY (user_id, anime_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (anime_id) REFERENCES animes(id) ON DELETE CASCADE
@@ -37,27 +35,23 @@ CREATE TABLE user_anime_list (
 
 -- --- DONNÉES DE TEST ---
 
--- 1. Ajout de quelques utilisateurs
 INSERT INTO users (pseudo) VALUES 
 ('Cristaline_Fraise'), 
 ('Xenojhiiva'),
 ('JeSus');
 
--- 2. Ajout de quelques genres
 INSERT INTO genres (name) VALUES 
 ('Shonen'), 
 ('Seinen'), 
 ('Isekai'),
 ('Romance');
 
--- 3. Ajout de quelques animes
-INSERT INTO animes (name, synopsis, status, cover) VALUES 
-('Eighty-Six', 'L''histoire dans un monde en guerre Vladilena Milize est attribuee a un escadron', 'termine', '86.jpg'),
-('Wandering Witch: The Journey of Elaina', 'L''histoire du voyage d''une sorciere au nom d''Elaina', 'termine', 'wandering_witch.jpg'),
-('One Piece', 'Une histoire de pirates qui s''etire en longueur...', 'en cours', 'one_piece.jpg'),
-('Gintama', 'C''est quoi ?', 'annule', 'gintama.jpg');
+INSERT INTO animes (name, synopsis, status, cover_url) VALUES 
+('Eighty-Six', 'L''histoire dans un monde en guerre Vladilena Milize est attribuee a un escadron', 'termine', NULL),
+('Wandering Witch: The Journey of Elaina', 'L''histoire du voyage d''une sorciere au nom d''Elaina', 'termine', NULL),
+('One Piece', 'Une histoire de pirates qui s''etire en longueur...', 'en cours', NULL),
+('Gintama', 'C''est quoi ?', 'annule', NULL);
 
--- Liaison des genres aux animes
 INSERT INTO anime_genres (anime_id, genre_name) VALUES 
-(1, 'Seinen'), -- Eighty-Six est un Seinen
-(3, 'Shonen'); -- One Piece est un Shonen
+(1, 'Seinen'),
+(3, 'Shonen');
