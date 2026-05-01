@@ -41,8 +41,8 @@ class UserAnime(db.Model):
     anime_id = db.Column(db.Integer, db.ForeignKey('animes.id'), primary_key=True)
     statut   = db.Column(db.String(30), default='À voir')
     note     = db.Column(db.Integer, nullable=True)  # 1-10
-    user     = db.relationship('User',  backref='liste_animes')
-    anime    = db.relationship('Anime', backref='dans_listes')
+    user  = db.relationship('User',  backref=db.backref('liste_animes', cascade="all, delete-orphan"))
+    anime = db.relationship('Anime', backref=db.backref('dans_listes', cascade="all, delete-orphan"))
 
 
 def anime_to_dict(a):
