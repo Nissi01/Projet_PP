@@ -2,9 +2,17 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 import time
 from flask_cors import CORS
+import os
+from werkzeug.utils import secure_filename
+import time
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
+
+# Configuration pour l'upload
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'covers')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:root@db/myanimelist'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -19,12 +27,11 @@ anime_genres = db.Table('anime_genres',
 
 class Anime(db.Model):
     __tablename__ = 'animes'
-    id        = db.Column(db.Integer, primary_key=True)
-    name      = db.Column(db.String(100), nullable=False)
-    synopsis  = db.Column(db.Text)
-    status    = db.Column(db.String(20), default='en cours')
-    cover_url = db.Column(db.String(500), nullable=True)
-    genres    = db.relationship('Genre', secondary=anime_genres, backref='animes', lazy='subquery')
+    id       = db.Column(db.Integer, primary_key=True)
+    name     = db.Column(db.String(100), nullable=False)
+    synopsis = db.Column(db.Text)
+    status   = db.Column(db.String(20), default='en cours')
+    genres   = db.relationship('Genre', secondary=anime_genres, backref='animes', lazy='subquery')
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -49,7 +56,6 @@ def anime_to_dict(a):
     return {
         "id": a.id, "name": a.name,
         "synopsis": a.synopsis, "status": a.status,
-        "cover_url": a.cover_url,
         "genres": [g.name for g in a.genres],
     }
 
@@ -87,7 +93,7 @@ def add_anime():
     data = request.get_json()
     if not data or 'name' not in data:
         return jsonify({"error": "Le champ 'name' est obligatoire"}), 400
-    a = Anime(name=data['name'], synopsis=data.get('synopsis', ''), status=data.get('status', 'en cours'), cover_url=data.get('cover_url', None))
+    a = Anime(name=data['name'], synopsis=data.get('synopsis', ''), status=data.get('status', 'en cours'))
     for gn in data.get('genres', []):
         g = Genre.query.get(gn)
         if g: a.genres.append(g)
@@ -100,10 +106,9 @@ def update_anime(id):
     a = Anime.query.get(id)
     if not a: return jsonify({"erreur": "anime non trouvé"}), 404
     data = request.get_json()
-    a.name      = data.get('name', a.name)
-    a.synopsis  = data.get('synopsis', a.synopsis)
-    a.status    = data.get('status', a.status)
-    a.cover_url = data.get('cover_url', a.cover_url)
+    a.name = data.get('name', a.name)
+    a.synopsis = data.get('synopsis', a.synopsis)
+    a.status = data.get('status', a.status)
     if 'genres' in data:
         a.genres = []
         for gn in data['genres']:
@@ -120,6 +125,21 @@ def delete_anime(id):
     db.session.commit()
     return jsonify({"message": f"'{a.name}' supprimé"}), 200
 
+@app.route('/upload', methods=['POST'])
+def upload_cover():
+    if 'cover' not in request.files:
+        return jsonify({"error": "Aucun fichier envoyé"}), 400
+    
+    file = request.files['cover']
+    if file.filename == '':
+        return jsonify({"error": "Aucun fichier sélectionné"}), 400
+        
+    if file:
+        # Timestamp pour eviter les doublons
+        filename = f"{int(time.time())}_{secure_filename(file.filename)}"
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        return jsonify({"cover": filename}), 200
 
 # ─── API User ─────────────────────────────────────────────────────────────────
 @app.route('/users', methods=['GET'])

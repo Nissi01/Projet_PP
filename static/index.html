@@ -136,6 +136,17 @@
     function apiDeleteUser(id)    { return MOCK_MODE ? mockDeleteUser(id)    : apiFetch('/users/' + id, { method: 'DELETE' }); }
     function apiGetGenres()       { return MOCK_MODE ? mockGetGenres()       : apiFetch('/genres'); }
     function apiAddGenre(data)    { return MOCK_MODE ? mockAddGenre(data)    : apiFetch('/genres', { method: 'POST', body: JSON.stringify(data) }); }
+    async function apiUploadCover(file) {
+      var formData = new FormData();
+      formData.append('cover', file);
+      
+      var res = await fetch(API_BASE + '/upload', {
+        method: 'POST',
+        body: formData // Note: on ne met pas 'Content-Type: application/json' ici !
+      });
+      if (!res.ok) { throw new Error('Erreur lors de l\'upload'); }
+      return res.json();
+    }
   </script>
 
   <script type="text/babel">
@@ -761,8 +772,8 @@ function AnimeCard({ anime, onSelect, onDelete }) {
 
   const statusColor = {
     'en cours':  'var(--green)',
-    'terminé':   'var(--accent)',
-    'à venir':   'var(--yellow)',
+    'termine':   'var(--accent)',
+    'a venir':   'var(--yellow)',
   }[anime.status] || 'var(--text-lo)';
 
   return (
@@ -795,6 +806,7 @@ function AnimeCard({ anime, onSelect, onDelete }) {
           <rect width="100%" height="100%" fill={`url(#stripe-${anime.id})`} />
           <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="oklch(40% 0.01 260)" fontSize="11" fontFamily="monospace">cover art</text>
         </svg>
+        
         <div style={animeCardStyles.coverOverlay}>
           <span style={animeCardStyles.detailBtn}>Voir détails →</span>
         </div>
@@ -834,6 +846,7 @@ const animeCardStyles = {
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderColor: 'var(--border)',
     borderRadius: 'var(--radius-md)',
     overflow: 'hidden',
     display: 'flex',
@@ -991,7 +1004,7 @@ function AnimeList({ onSelect, onAdd, refreshKey }) {
     return matchSearch && matchFilter;
   });
 
-  const STATUS_FILTERS = ['tous', 'en cours', 'terminé', 'à venir'];
+  const STATUS_FILTERS = ['tous', 'en cours', 'termine', 'a venir'];
 
   return (
     <div style={alStyles.container}>
@@ -1262,8 +1275,8 @@ function AnimeDetail({ animeId, onBack, onEdit }) {
 
   const statusMeta = {
     'en cours':  { color: 'var(--green)',  label: 'En cours' },
-    'terminé':   { color: 'var(--accent)', label: 'Terminé' },
-    'à venir':   { color: 'var(--yellow)', label: 'À venir' },
+    'termine':   { color: 'var(--accent)', label: 'Terminé' },
+    'a venir':   { color: 'var(--yellow)', label: 'A venir' },
   };
   const meta = anime ? (statusMeta[anime.status] || { color: 'var(--text-lo)', label: anime.status }) : null;
 
@@ -1742,9 +1755,27 @@ function AnimeForm({ anime, onClose, onSaved }) {
 
           {/* Statut */}
           <div style={afStyles.field}>
+            <label style={afStyles.label}>Image de couverture (Optionnel)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setCoverFile(e.target.files[0])}
+              style={{
+                padding: '4px',
+                background: 'transparent',
+                border: '1px dashed var(--border)',
+                cursor: 'pointer'
+              }}
+            />
+            {form.cover && !coverFile && (
+               <span style={{fontSize: '11px', color: 'var(--text-lo)'}}>Image actuelle : {form.cover}</span>
+            )}
+          </div>
+
+          <div style={afStyles.field}>
             <label style={afStyles.label}>Statut</label>
             <div style={afStyles.statusGroup}>
-              {['en cours', 'terminé', 'à venir'].map(s => (
+              {['en cours', 'termine', 'a venir'].map(s => (
                 <button
                   key={s} type="button"
                   onClick={() => set('status', s)}
