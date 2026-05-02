@@ -30,6 +30,14 @@ class User(db.Model):
     __tablename__ = 'users'
     id     = db.Column(db.Integer, primary_key=True)
     pseudo = db.Column(db.String(50), nullable=False, unique=True)
+    profile = db.relationship('UserProfile', backref='user', uselist=False, cascade="all, delete-orphan")
+
+class UserProfile(db.Model):
+    __tablename__ = 'user_profiles'
+    # La clé primaire EST la clé étrangère de l'utilisateur (C'est ça le vrai 1-to-1 !)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    bio = db.Column(db.Text, nullable=True)
+    avatar_url = db.Column(db.String(255), nullable=True, default="https://api.dicebear.com/7.x/avataaars/svg?seed=Gintoki")
 
 class Genre(db.Model):
     __tablename__ = 'genres'
@@ -147,6 +155,46 @@ def delete_user(id):
     db.session.delete(u)
     db.session.commit()
     return jsonify({"message": f"'{u.pseudo}' supprimé"}), 200
+
+@app.route('/users/<int:user_id>/profile', methods=['GET'])
+def get_user_profile(user_id):
+    u = User.query.get(user_id)
+    if not u: return jsonify({"error": "Utilisateur non trouvé"}), 404
+    
+    if not u.profile:
+        u.profile = UserProfile(user_id=user_id)
+        db.session.add(u.profile)
+        db.session.commit()
+
+    return jsonify({
+        "user_id": user_id,
+        "pseudo": u.pseudo,
+        "bio": u.profile.bio,
+        "avatar_url": u.profile.avatar_url
+    }), 200
+
+
+@app.route('/users/<int:user_id>/profile', methods=['POST'])
+def update_user_profile(user_id):
+    u = User.query.get(user_id)
+    if not u: return jsonify({"error": "Utilisateur non trouvé"}), 404
+    
+    # Sécurité au cas où le profil n'existe pas
+    if not u.profile:
+        u.profile = UserProfile(user_id=user_id)
+        db.session.add(u.profile)
+
+    data = request.get_json()
+    u.profile.bio = data.get('bio', u.profile.bio)
+    u.profile.avatar_url = data.get('avatar_url', u.profile.avatar_url)
+    
+    db.session.commit()
+    
+    return jsonify({
+        "message": "Profil mis à jour avec succès",
+        "bio": u.profile.bio,
+        "avatar_url": u.profile.avatar_url
+    }), 200
 
 
 # ─── API Liste utilisateur ────────────────────────────────────────────────────

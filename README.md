@@ -41,3 +41,5 @@ GET /users : Liste tous les utilisateurs enregistrés.
 POST /users : Crée un nouvel utilisateur (Nécessite le champ pseudo).
 GET /users/<user_id>/animes : Affiche la liste personnelle d'un utilisateur.
 POST /users/<user_id>/animes : Ajoute un anime à la liste de l'utilisateur (avec gestion du statut et de la note).
+GET /users/<user_id>/profile : Récupère les détails du profil (bio, avatar).
+POST /users/<user_id>/profile : Crée ou met à jour le profil de l'utilisateur.
