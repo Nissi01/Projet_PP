@@ -22,14 +22,14 @@ animes = [
     {
         "name": "Gintama°",
         "synopsis": "La vie déjantée de Gintoki dans un monde de samouraïs et d'aliens. Le meilleur anime de tous les temps.",
-        "status": "terminé",
+        "status": "termine",
         "cover_url": "https://myanimelist.net/images/anime/3/72078.jpg",
         "genres": ["Action", "Comédie"]
     },
     {
         "name": "Your Lie in April",
         "synopsis": "Un pianiste prodige redécouvre la musique grâce à une violoniste excentrique. Un mélange poignant de romance et de drame.",
-        "status": "terminé",
+        "status": "termine",
         "cover_url": "https://cdn.myanimelist.net/images/anime/3/67177l.jpg",
         "genres": ["Romance", "Drame", "Musical"]
     }
@@ -61,7 +61,7 @@ requests.post(
     f"{BASE_URL}/users/{id_user}/animes",
     json={
         "anime_id": id_anime,
-        "statut": "Terminé",
+        "statut": "Termine",
         "note": 10
     }
 )
