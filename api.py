@@ -34,7 +34,6 @@ class User(db.Model):
 
 class UserProfile(db.Model):
     __tablename__ = 'user_profiles'
-    # La clé primaire EST la clé étrangère de l'utilisateur (C'est ça le vrai 1-to-1 !)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     bio = db.Column(db.Text, nullable=True)
     avatar_url = db.Column(db.String(255), nullable=True, default="https://api.dicebear.com/7.x/avataaars/svg?seed=Gintoki")

@@ -14,20 +14,27 @@ Base de données : MySQL (version 8.0).
 ORM : Flask-SQLAlchemy pour une interaction sécurisée et orientée objet avec la base de données.
 Front-End : HTML/CSS/JS natif servi par l'API Flask.
 DevOps : Docker & Docker Compose pour un déploiement instantané.
+Donnée : Utilisation d'un volume Docker pour assurer la persistance des données après l'arrêt des conteneurs
 
 
 ### Prérequis
 Application : Docker Desktop(https://www.docker.com/products/docker-desktop) installé et en cours d'exécution.
-Git installé.(Pour l'instant, on fait juste la version GIT)
+Git installé.
+Python 3 installé
 
 ### Démarrage
+Pour GIT 
 Clonez le dépôt sur votre machine locale :
    git clone https://github.com/Nissi01/Projet_PP.git
    cd Projet_PP
    docker-compose up --build
+   python script_pour_les_tests.py
 Accédez à l'application web via un navigateur :
 http://localhost:5001/
 
+Pour Docker
+Lien vers l'image : https://hub.docker.com/r/nissi4/projet_pp-api
+Lancer l'image sur votre machine : docker run -p 5001:5001 nissi4/projet_pp-api:latest
 
 ### Documentation de l'API 
 
